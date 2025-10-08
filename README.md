@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Katalog Frontend
 
-## Getting Started
+A **Next.js + TypeScript** frontend for the Katalog backend API.  
+This application provides an intuitive user interface to manage books, track progress, set goals, write notes, and view analytics.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Authentication
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Register new users with email verification.
+- Login, logout, and demo login support.
+- Password reset with verification flow.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Book Management
 
-## Learn More
+- Add, update, and remove books.
+- View books by status: **Completed**, **In Progress**.
+- Search and view detailed book information.
+- Track reading progress interactively.
 
-To learn more about Next.js, take a look at the following resources:
+### Goals & Sessions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Set reading goals per book.
+- Start and log reading sessions.
+- Track progress toward challenges and goals.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Notes
 
-## Deploy on Vercel
+- Create and manage notes for specific chapters.
+- View grouped notes for quick review.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Dashboard & Analytics
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Visualize progress with charts and statistics.
+- See daily/weekly reading streaks.
+- Monitor achievements and reading history.
+
+### Profile
+
+- Update profile details and preferences.
+- Manage account security (password change).
+
+---
+
+## Key Pages
+
+### Dashboard (/dashboard)
+
+- Overview of reading statistics
+- Recent reading activity
+- Current reading challenges
+- Progress towards goals
+
+### Book Management (/books)
+
+- In Progress (/books/InProgress) - Currently reading books
+- Completed (/books/completed) - Finished books
+- Book Notes (/books/notes) - All your annotations
+
+### User Profile (/profile)
+
+- Personal information management
+- Reading preferences
+- Account settings
+
+### Onboarding (/onBoarding)
+
+- Guided setup for new users
+- Reading preferences selection
+- Initial book additions
+
+---
+
+## Component Overview
+
+- AddBookModal - Add new books to library
+- BookCard - Display book information
+- BookDetailsModal - Detailed book view
+- ReadingGoalModal - Set reading targets
+- ReadingSessionModal - Log reading progress
+- ChapterNotesModal - Take chapter notes
+- StatisticsCards - Display reading stats
+
+## Layout Components
+
+- NavBar - Navigation with user menu
+
+### Redux State Management (API Slices)
+
+- Books API (redux/api/books.ts) - Handles all book, authentication and progress tracking related API calls
+
+---
+
+## Tech Stack
+
+- **Framework**: [Next.js 13+ (App Router)](https://nextjs.org/)
+- **Language**: TypeScript
+- **State Management**: Redux Toolkit (RTK Query for API calls)
+- **Styling**: CSS (global + modular)
+- **UI Components**: Custom React components (modals, cards, analytics)
+- **API Integration**: Katalog API backend (Express.js + MongoDB)
+
+---
+
+## 📂 Project Structure
+w   3Adsqd 
