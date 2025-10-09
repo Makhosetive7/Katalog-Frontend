@@ -101,8 +101,3 @@ This application provides an intuitive user interface to manage books, track pro
 - **Styling**: CSS (global + modular)
 - **UI Components**: Custom React components (modals, cards, analytics)
 - **API Integration**: Katalog API backend (Express.js + MongoDB)
-
----
-
-## 📂 Project Structure
-w   3Adsqd 
