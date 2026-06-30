@@ -7,6 +7,7 @@ export type StoredUser = {
   email?: string;
   isVerified?: boolean;
   isDemo?: boolean;
+  authProvider?: "local" | "google";
   profile?: {
     firstName?: string;
     lastName?: string;

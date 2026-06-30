@@ -2,7 +2,11 @@
 import { createCustomApi } from "../../utils/apiConfig";
 import type {
   Book,
-  BookProgress,
+  CreateBookInput,
+  BookProgressAnalyticsResponse,
+  ReadingStatisticsResponse,
+  GoalStatistics,
+  DashboardBookProgress,
   ChapterNote,
   BookStatistics,
   ReadingSession,
@@ -78,7 +82,7 @@ export const booksApi = createCustomApi("booksApi", (builder) => ({
   }),
 
   getAllBooksProgress: builder.query<
-    { books: BookProgress[]; statistics: Record<string, number> },
+    { books: DashboardBookProgress[]; statistics: Record<string, number> },
     void
   >({
     query: () => `${API.books}/progress/dashboard`,
@@ -131,7 +135,7 @@ export const booksApi = createCustomApi("booksApi", (builder) => ({
     providesTags: ["BookStats"],
   }),
 
-  getBookProgressAnalytics: builder.query<unknown, string>({
+  getBookProgressAnalytics: builder.query<BookProgressAnalyticsResponse, string>({
     query: (id) => `${API.books}/${id}/analytics`,
     providesTags: (result, error, id) => [{ type: "Book", id }],
   }),
@@ -151,7 +155,7 @@ export const booksApi = createCustomApi("booksApi", (builder) => ({
     query: (bookId) => `${API.insights}/books/${bookId}/pace`,
   }),
 
-  createBook: builder.mutation<Book, Partial<Book>>({
+  createBook: builder.mutation<Book, CreateBookInput>({
     query: (body) => ({ url: API.books, method: "POST", body }),
     invalidatesTags: ["Books", "BookStats", "Activity", "Insights", "Recommendations"],
   }),
@@ -204,7 +208,7 @@ export const booksApi = createCustomApi("booksApi", (builder) => ({
     providesTags: (result, error, bookId) => [{ type: "Sessions", id: bookId }],
   }),
 
-  getReadingStatistics: builder.query<unknown, string>({
+  getReadingStatistics: builder.query<ReadingStatisticsResponse, string>({
     query: (bookId) => `${API.books}/${bookId}/statistics`,
     providesTags: (result, error, bookId) => [{ type: "Sessions", id: bookId }],
   }),
@@ -293,7 +297,7 @@ export const booksApi = createCustomApi("booksApi", (builder) => ({
     providesTags: (result, error, bookId) => [{ type: "Goals", id: bookId }],
   }),
 
-  getGoalStatistics: builder.query<unknown, { userId: string; bookId: string }>({
+  getGoalStatistics: builder.query<GoalStatistics, { userId: string; bookId: string }>({
     query: ({ userId, bookId }) => `${API.books}/goals/stats/${userId}/${bookId}`,
     providesTags: ["Goals"],
   }),
@@ -356,6 +360,13 @@ export const booksApi = createCustomApi("booksApi", (builder) => ({
 
   demoLogin: builder.mutation<{ token: string; user: User }, void>({
     query: () => ({ url: `${API.auth}/demo`, method: "POST" }),
+  }),
+
+  getAuthConfig: builder.query<
+    { env: string; allowLocal: boolean; allowDemo: boolean; allowGoogle: boolean },
+    void
+  >({
+    query: () => `${API.auth}/config`,
   }),
 
   logout: builder.mutation<void, void>({
@@ -482,6 +493,7 @@ export const {
   useRegisterMutation,
   useLoginMutation,
   useDemoLoginMutation,
+  useGetAuthConfigQuery,
   useGetNotesByBookIdQuery,
   useLogoutMutation,
   useGetProfileQuery,

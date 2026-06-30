@@ -13,6 +13,7 @@ import {
 import { useParams } from "next/navigation";
 import { MenuBook, Whatshot, EmojiEvents } from "@mui/icons-material";
 import { useGetPublicProfileQuery } from "@/redux/api/books";
+import type { PublicProfile } from "@/types/books";
 import BooksPageHeader from "@/components/book/BooksPageHeader";
 import ProfileAchievements from "@/components/profile/ProfileAchievements";
 import DashboardStatCard from "@/components/dashboard/DashboardStatCard";
@@ -140,7 +141,7 @@ export default function PublicProfilePage() {
               Recently completed
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-              {recentBooks.map((book, i) => (
+              {recentBooks.map((book: PublicProfile["recentBooks"][number], i) => (
                 <Chip
                   key={i}
                   label={`${book.title} — ${book.author}`}

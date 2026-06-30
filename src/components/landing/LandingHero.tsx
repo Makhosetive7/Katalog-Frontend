@@ -14,14 +14,22 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { ArrowForward, PlayArrow } from "@mui/icons-material";
-import { useDemoLoginMutation } from "@/redux/api/books";
+import { useDemoLoginMutation, useGetAuthConfigQuery } from "@/redux/api/books";
 import { setAuthSession } from "@/utils/authStorage";
+import { googleSignInUrl } from "@/utils/apiBaseUrl";
 import ProgressPreview from "./ProgressPreview";
 import { DASH, landingButtonPrimarySx, landingButtonOutlinedSx, landingChipSx } from "./landingTheme";
 
 export default function LandingHero() {
   const router = useRouter();
   const [demoLogin, { isLoading: isDemoLoading }] = useDemoLoginMutation();
+  const { data: authConfig } = useGetAuthConfigQuery();
+
+  const allowDemo = authConfig?.allowDemo ?? true;
+  const allowLocal = authConfig?.allowLocal ?? true;
+  const allowGoogle = authConfig?.allowGoogle ?? false;
+  const primaryHref = allowLocal ? "/auth/register" : "/auth/login";
+  const primaryLabel = allowLocal ? "Start Tracking" : "Sign in";
 
   const handleDemo = async () => {
     try {
@@ -95,8 +103,15 @@ export default function LandingHero() {
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <Button
-                  component={Link}
-                  href="/auth/register"
+                  component={allowGoogle && !allowLocal ? "button" : Link}
+                  href={allowGoogle && !allowLocal ? undefined : primaryHref}
+                  onClick={
+                    allowGoogle && !allowLocal
+                      ? () => {
+                          window.location.href = googleSignInUrl();
+                        }
+                      : undefined
+                  }
                   variant="contained"
                   size="large"
                   endIcon={<ArrowForward />}
@@ -110,35 +125,37 @@ export default function LandingHero() {
                     "&:hover": { bgcolor: "#4CAD02", boxShadow: "none" },
                   }}
                 >
-                  Start Tracking
+                  {allowGoogle && !allowLocal ? "Continue with Google" : primaryLabel}
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={handleDemo}
-                  disabled={isDemoLoading}
-                  startIcon={
-                    isDemoLoading ? (
-                      <CircularProgress size={20} sx={{ color: DASH.cream }} />
-                    ) : (
-                      <PlayArrow />
-                    )
-                  }
-                  sx={{
-                    ...landingButtonOutlinedSx,
-                    py: 1.6,
-                    px: 3.5,
-                    fontSize: "1rem",
-                    color: DASH.cream,
-                    borderColor: alpha(DASH.cream, 0.35),
-                    "&:hover": {
-                      borderColor: DASH.gold,
-                      bgcolor: alpha(DASH.gold, 0.1),
-                    },
-                  }}
-                >
-                  {isDemoLoading ? "Loading…" : "Try Demo"}
-                </Button>
+                {allowDemo && (
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={handleDemo}
+                    disabled={isDemoLoading}
+                    startIcon={
+                      isDemoLoading ? (
+                        <CircularProgress size={20} sx={{ color: DASH.cream }} />
+                      ) : (
+                        <PlayArrow />
+                      )
+                    }
+                    sx={{
+                      ...landingButtonOutlinedSx,
+                      py: 1.6,
+                      px: 3.5,
+                      fontSize: "1rem",
+                      color: DASH.cream,
+                      borderColor: alpha(DASH.cream, 0.35),
+                      "&:hover": {
+                        borderColor: DASH.gold,
+                        bgcolor: alpha(DASH.gold, 0.1),
+                      },
+                    }}
+                  >
+                    {isDemoLoading ? "Loading…" : "Try Demo"}
+                  </Button>
+                )}
               </Stack>
             </Box>
           </Grid>

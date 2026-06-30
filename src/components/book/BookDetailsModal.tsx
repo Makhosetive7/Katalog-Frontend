@@ -31,7 +31,7 @@ type BookDetailsModalProps = {
     genre?: string | string[];
     status?: string;
     rating?: number;
-    pages?: number;
+    pages?: number | { current: number; total: number };
     totalChapters?: number;
     chapters?: number;
     coverImage?: string;
@@ -43,6 +43,15 @@ type BookDetailsModalProps = {
   open: boolean;
   onClose: () => void;
 };
+
+function resolvePageCount(
+  pages?: number | { current: number; total: number },
+  fallback?: number
+): number | string {
+  if (typeof pages === "number") return pages;
+  if (pages && typeof pages === "object") return pages.total;
+  return fallback ?? "—";
+}
 
 function DetailStat({
   label,
@@ -240,7 +249,7 @@ export default function BookDetailsModal({
                 lineHeight: 1.5,
               }}
             >
-              {book.pages ?? bookDetails?.pages ?? "—"} pages
+              {resolvePageCount(book.pages, bookDetails?.pages)} pages
               {(book.totalChapters ?? book.chapters)
                 ? ` · ${book.totalChapters ?? book.chapters} chapters`
                 : ""}
@@ -308,7 +317,7 @@ export default function BookDetailsModal({
                   }}
                 >
                   Page {analytics?.byPages?.current ?? 0} of{" "}
-                  {analytics?.byPages?.total ?? book.pages ?? "—"}
+                  {analytics?.byPages?.total ?? resolvePageCount(book.pages)}
                 </Typography>
                 <Typography
                   sx={{

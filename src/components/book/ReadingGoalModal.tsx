@@ -11,7 +11,7 @@ import {
   Typography,
   alpha,
 } from "@mui/material";
-import { Book } from "@/types/books";
+import { Book, ReadingGoal } from "@/types/books";
 import { useCreateReadingGoalMutation } from "@/redux/api/books";
 import AppModal from "./AppModal";
 import { modalFieldSx, modalSelectSx } from "./modalTheme";
@@ -55,9 +55,9 @@ export default function ReadingGoalModal({
   const progressPct =
     totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
 
-  const [type, setType] = useState("pages");
+  const [type, setType] = useState<ReadingGoal["type"]>("pages");
   const [target, setTarget] = useState("");
-  const [timeFrame, setTimeFrame] = useState("custom");
+  const [timeFrame, setTimeFrame] = useState<ReadingGoal["timeframe"]>("custom");
   const [endDate, setEndDate] = useState("");
   const [error, setError] = useState<string | null>(null);
 

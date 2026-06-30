@@ -18,7 +18,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.12",
     "lottie-react": "^2.4.1",
-    "next": "15.5.2",
+    "next": "^15.5.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-redux": "^9.2.0",
@@ -31,7 +31,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.5.2",
+    "eslint-config-next": "^15.5.9",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

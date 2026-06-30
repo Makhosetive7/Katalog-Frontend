@@ -2,6 +2,7 @@
 import axios from "axios";
 import { createApi, fetchBaseQuery, BaseQueryFn, FetchArgs, FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
 import { clearAuthSession } from "./authStorage";
+import { API_BASE_URL } from "./apiBaseUrl";
 
 async function handleUnauthorized() {
   clearAuthSession();
@@ -9,6 +10,7 @@ async function handleUnauthorized() {
 }
 
 // Type-safe API creator
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createCustomApi<Endpoints extends Record<string, any>>(
   reducerPath: string,
   endpoints: (builder: import("@reduxjs/toolkit/query/react").EndpointBuilder<
@@ -20,7 +22,7 @@ export function createCustomApi<Endpoints extends Record<string, any>>(
   return createApi({
     reducerPath,
     baseQuery: fetchBaseQuery({
-      baseUrl: "http://localhost:5000/api",
+      baseUrl: API_BASE_URL,
       prepareHeaders: (headers) => {
         if (typeof window !== "undefined") {
           const token = localStorage.getItem("token");
@@ -39,7 +41,7 @@ export function createCustomApi<Endpoints extends Record<string, any>>(
  * Axios instance for direct API calls outside of RTK Query
  */
 export const apiConfig = axios.create({
-  baseURL: "http://localhost:5000/api", 
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });

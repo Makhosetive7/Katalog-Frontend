@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Box, Paper, Typography, Button } from "@mui/material";
-import { useVerifyEmailMutation } from "../../../redux/api/books"; 
+import { Box, Paper, Typography, Button, CircularProgress } from "@mui/material";
+import { useVerifyEmailMutation } from "../../../redux/api/books";
 
-export default function VerificationPage() {
+function VerificationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token") || "";
@@ -23,8 +23,12 @@ export default function VerificationPage() {
       try {
         await verifyEmail({ token }).unwrap();
         setStatus("success");
-      } catch (err: any) {
-        if (err?.data?.message?.includes("expired")) setStatus("expired");
+      } catch (err: unknown) {
+        const message =
+          err && typeof err === "object" && "data" in err
+            ? String((err as { data?: { message?: string } }).data?.message ?? "")
+            : "";
+        if (message.includes("expired")) setStatus("expired");
         else setStatus("error");
       }
     };
@@ -76,5 +80,25 @@ export default function VerificationPage() {
         )}
       </Paper>
     </Box>
+  );
+}
+
+export default function VerificationPage() {
+  return (
+    <Suspense
+      fallback={
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="100vh"
+          bgcolor="#f4f6f8"
+        >
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <VerificationContent />
+    </Suspense>
   );
 }

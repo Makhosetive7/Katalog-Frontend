@@ -171,8 +171,10 @@ export interface Book {
   totalPages: number;
   currentPage: number;
   pages: number;
+  chapters?: number;
   totalChapters: number;
   currentChapter: number;
+  completionPercentage?: number;
   status: "Planned" | "In-Progress" | "Completed" | "Dropped";
   rating?: number;
   genre: string;
@@ -181,6 +183,64 @@ export interface Book {
   createdAt: string;
   updatedAt: string;
   statistics: number;
+}
+
+export type CreateBookInput = {
+  title: string;
+  author: string;
+  genre?: string;
+  pages?: number;
+  chapters?: number;
+  status?: Book["status"];
+  rating?: number;
+  imageUrl?: string;
+  isbn?: string;
+  description?: string;
+  openLibraryKey?: string;
+};
+
+export interface BookProgressAnalytics {
+  completionPercentage?: number;
+  byPages?: { current?: number; total?: number };
+  byChapters?: { current?: number; total?: number };
+}
+
+export interface BookProgressAnalyticsResponse {
+  analytics?: BookProgressAnalytics;
+  bookDetails?: {
+    title?: string;
+    author?: string;
+    pages?: number;
+  };
+}
+
+export interface ReadingStatisticsResponse {
+  reading?: {
+    totalPagesRead?: number;
+    totalChaptersRead?: number;
+    pagesPerDay?: number | string;
+    daysTracked?: number;
+    estimatedCompletionDate?: string;
+  };
+}
+
+export interface GoalStatistics {
+  totalGoals?: number;
+  completedGoals?: number;
+  activeGoals?: number;
+  avgCompletion?: number;
+}
+
+export interface DashboardBookProgress {
+  id: string;
+  title: string;
+  author: string;
+  genre?: string[];
+  status: Book["status"];
+  pages: { current: number; total: number };
+  chapters: { current: number; total: number };
+  completionPercentage: number;
+  color?: string;
 }
 
 export interface BookProgress {
@@ -278,7 +338,7 @@ export interface Streak {
   currentStreak: number;
   longestStreak: number;
   lastReadingDate: string;
-  streakHistory: any[];
+  streakHistory: Record<string, unknown>[];
   createdAt: string;
   updatedAt: string;
 }
@@ -294,7 +354,7 @@ export interface Achievement {
 export interface ProfileResponse {
   user: User;
   achievements: Achievement[];
-  goals: any[];
-  booksRead: any[];
+  goals: Record<string, unknown>[];
+  booksRead: Record<string, unknown>[];
   streak: Streak;
 }

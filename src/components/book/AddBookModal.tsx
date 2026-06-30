@@ -13,7 +13,7 @@ import {
 import { useCreateBookMutation } from "@/redux/api/books";
 import AppModal from "./AppModal";
 import BookDiscoveryPanel from "./BookDiscoveryPanel";
-import type { DiscoveryBook } from "@/types/books";
+import type { Book, DiscoveryBook } from "@/types/books";
 import { modalFieldSx, modalSelectSx } from "./modalTheme";
 import { DASH } from "@/components/dashboard/dashboardTheme";
 
@@ -28,7 +28,7 @@ const EMPTY_FORM = {
   genre: "",
   pages: "",
   chapters: "",
-  status: "Planned",
+  status: "Planned" as Book["status"],
   rating: "",
   imageUrl: "",
   isbn: "",

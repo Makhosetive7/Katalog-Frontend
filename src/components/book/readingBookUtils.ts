@@ -1,6 +1,6 @@
 import { Book } from "@/types/books";
 
-export type ReadingBook = Book & {
+export type ReadingBook = Omit<Book, "pages"> & {
   _id?: string;
   completionPercentage?: number;
   imageUrl?: string;

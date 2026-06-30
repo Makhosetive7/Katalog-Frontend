@@ -1,6 +1,7 @@
 "use client";
 
 import { useGetAllBooksProgressQuery } from "@/redux/api/books";
+import type { DashboardBookProgress } from "@/types/books";
 import {
   Container,
   Typography,
@@ -43,8 +44,8 @@ export default function BookAnalytics() {
   return (
     <Container maxWidth="xl" sx={{ mt: 4 }}>
       <Grid container spacing={3}>
-        {allBooksProgress.books.map((book: any) => (
-          <Grid item xs={12} sm={6} md={4} key={book.id}>
+        {allBooksProgress.books.map((book: DashboardBookProgress) => (
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={book.id}>
             <Card
               sx={{
                 background: `linear-gradient(135deg, ${alpha(

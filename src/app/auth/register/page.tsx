@@ -14,14 +14,16 @@ import {
   Stack,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { useRegisterMutation } from "@/redux/api/books";
+import { useRegisterMutation, useGetAuthConfigQuery } from "@/redux/api/books";
 import AuthLayout from "@/components/auth/AuthLayout";
 import AuthLink, { AuthFooterText } from "@/components/auth/AuthLink";
 import { getApiErrorMessage } from "@/components/auth/getApiErrorMessage";
 import { AUTH, authFieldSx, authPrimaryButtonSx, authAlertSx } from "@/components/auth/authTheme";
+import { googleSignInUrl } from "@/utils/apiBaseUrl";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { data: authConfig, isLoading: isConfigLoading } = useGetAuthConfigQuery();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -33,6 +35,51 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
 
   const [register, { isLoading }] = useRegisterMutation();
+
+  const allowLocal = authConfig?.allowLocal ?? true;
+  const allowGoogle = authConfig?.allowGoogle ?? false;
+
+  if (isConfigLoading) {
+    return (
+      <AuthLayout quote="Start your reading streak." title="Create account" subtitle="Loading…">
+        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <CircularProgress size={28} />
+        </Box>
+      </AuthLayout>
+    );
+  }
+
+  if (!allowLocal) {
+    return (
+      <AuthLayout
+        quote="Start your reading streak."
+        title="Create account"
+        subtitle="Sign up with your Google account to get started."
+        footer={
+          <AuthFooterText>
+            Already have an account? <AuthLink href="/auth/login">Sign in</AuthLink>
+          </AuthFooterText>
+        }
+      >
+        {allowGoogle ? (
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => {
+              window.location.href = googleSignInUrl();
+            }}
+            sx={authPrimaryButtonSx}
+          >
+            Continue with Google
+          </Button>
+        ) : (
+          <Alert severity="info" sx={authAlertSx}>
+            Registration is not available. Please contact support.
+          </Alert>
+        )}
+      </AuthLayout>
+    );
+  }
 
   const handleChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
