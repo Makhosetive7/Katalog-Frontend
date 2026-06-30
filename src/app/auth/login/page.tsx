@@ -110,12 +110,14 @@ function LoginPageContent() {
       quote="Pick up where you left off."
       title="Sign in"
       subtitle={
-        allowGoogle && !allowLocal
-          ? "Continue with your Google account."
-          : "Welcome back — your shelf is waiting."
+        allowGoogle && allowLocal
+          ? "Sign in with Google or your email."
+          : allowGoogle
+            ? "Continue with your Google account."
+            : "Welcome back — your shelf is waiting."
       }
       footer={
-        allowLocal ? (
+        allowLocal || allowGoogle ? (
           <AuthFooterText>
             New to Katalog? <AuthLink href="/auth/register">Create an account</AuthLink>
           </AuthFooterText>

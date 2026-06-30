@@ -12,6 +12,8 @@ import {
   InputAdornment,
   IconButton,
   Stack,
+  Divider,
+  Typography,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useRegisterMutation, useGetAuthConfigQuery } from "@/redux/api/books";
@@ -20,6 +22,8 @@ import AuthLink, { AuthFooterText } from "@/components/auth/AuthLink";
 import { getApiErrorMessage } from "@/components/auth/getApiErrorMessage";
 import { AUTH, authFieldSx, authPrimaryButtonSx, authAlertSx } from "@/components/auth/authTheme";
 import { googleSignInUrl } from "@/utils/apiBaseUrl";
+
+const alphaBorder = "rgba(0,0,0,0.18)";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -45,38 +49,6 @@ export default function RegisterPage() {
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
           <CircularProgress size={28} />
         </Box>
-      </AuthLayout>
-    );
-  }
-
-  if (!allowLocal) {
-    return (
-      <AuthLayout
-        quote="Start your reading streak."
-        title="Create account"
-        subtitle="Sign up with your Google account to get started."
-        footer={
-          <AuthFooterText>
-            Already have an account? <AuthLink href="/auth/login">Sign in</AuthLink>
-          </AuthFooterText>
-        }
-      >
-        {allowGoogle ? (
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={() => {
-              window.location.href = googleSignInUrl();
-            }}
-            sx={authPrimaryButtonSx}
-          >
-            Continue with Google
-          </Button>
-        ) : (
-          <Alert severity="info" sx={authAlertSx}>
-            Registration is not available. Please contact support.
-          </Alert>
-        )}
       </AuthLayout>
     );
   }
@@ -108,11 +80,18 @@ export default function RegisterPage() {
     }
   };
 
+  const subtitle =
+    allowGoogle && allowLocal
+      ? "Sign up with Google or create an email account."
+      : allowGoogle
+        ? "Sign up with your Google account."
+        : "Free forever. Add your first book in under a minute.";
+
   return (
     <AuthLayout
       quote="Start your reading streak."
       title="Create account"
-      subtitle="Free forever. Add your first book in under a minute."
+      subtitle={subtitle}
       footer={
         <AuthFooterText>
           Already have an account? <AuthLink href="/auth/login">Sign in</AuthLink>
@@ -125,106 +104,147 @@ export default function RegisterPage() {
         </Alert>
       )}
 
-      <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={1.5}>
-          <Grid container spacing={1.5}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="First name"
-                autoComplete="given-name"
-                value={formData.firstName}
-                onChange={handleChange("firstName")}
-                disabled={isLoading}
-                sx={authFieldSx}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Last name"
-                autoComplete="family-name"
-                value={formData.lastName}
-                onChange={handleChange("lastName")}
-                disabled={isLoading}
-                sx={authFieldSx}
-              />
-            </Grid>
-          </Grid>
-
-          <TextField
+      <Stack spacing={1.5}>
+        {allowGoogle && (
+          <Button
             fullWidth
-            size="small"
-            label="Username"
-            autoComplete="username"
-            value={formData.username}
-            onChange={handleChange("username")}
-            disabled={isLoading}
-            sx={authFieldSx}
-          />
-
-          <TextField
-            fullWidth
-            size="small"
-            label="Email"
-            type="email"
-            autoComplete="email"
-            value={formData.email}
-            onChange={handleChange("email")}
-            disabled={isLoading}
-            sx={authFieldSx}
-          />
-
-          <TextField
-            fullWidth
-            size="small"
-            label="Password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="new-password"
-            value={formData.password}
-            onChange={handleChange("password")}
-            disabled={isLoading}
-            helperText="Min. 6 characters"
-            sx={authFieldSx}
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      size="small"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-              formHelperText: { sx: { fontFamily: AUTH.font, mx: 0, mt: 0.5 } },
+            variant="outlined"
+            onClick={() => {
+              window.location.href = googleSignInUrl();
             }}
-          />
-        </Stack>
+            disabled={isLoading}
+            sx={{
+              py: 1.1,
+              textTransform: "none",
+              fontWeight: 600,
+              borderColor: alphaBorder,
+              color: AUTH.dark,
+              "&:hover": { borderColor: AUTH.dark, bgcolor: "rgba(0,0,0,0.03)" },
+            }}
+          >
+            Continue with Google
+          </Button>
+        )}
 
-        <Button
-          fullWidth
-          type="submit"
-          variant="contained"
-          disabled={isLoading}
-          sx={{ ...authPrimaryButtonSx, mt: 2.5 }}
-        >
-          {isLoading ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <CircularProgress size={18} color="inherit" />
-              Creating account…
-            </Box>
-          ) : (
-            "Create account"
-          )}
-        </Button>
-      </Box>
+        {allowGoogle && allowLocal && (
+          <Divider>
+            <Typography variant="caption" color="text.secondary">
+              or
+            </Typography>
+          </Divider>
+        )}
+
+        {allowLocal ? (
+          <Box component="form" onSubmit={handleSubmit}>
+            <Stack spacing={1.5}>
+              <Grid container spacing={1.5}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="First name"
+                    autoComplete="given-name"
+                    value={formData.firstName}
+                    onChange={handleChange("firstName")}
+                    disabled={isLoading}
+                    sx={authFieldSx}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Last name"
+                    autoComplete="family-name"
+                    value={formData.lastName}
+                    onChange={handleChange("lastName")}
+                    disabled={isLoading}
+                    sx={authFieldSx}
+                  />
+                </Grid>
+              </Grid>
+
+              <TextField
+                fullWidth
+                size="small"
+                label="Username"
+                autoComplete="username"
+                value={formData.username}
+                onChange={handleChange("username")}
+                disabled={isLoading}
+                sx={authFieldSx}
+              />
+
+              <TextField
+                fullWidth
+                size="small"
+                label="Email"
+                type="email"
+                autoComplete="email"
+                value={formData.email}
+                onChange={handleChange("email")}
+                disabled={isLoading}
+                sx={authFieldSx}
+              />
+
+              <TextField
+                fullWidth
+                size="small"
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={formData.password}
+                onChange={handleChange("password")}
+                disabled={isLoading}
+                helperText="Min. 6 characters"
+                sx={authFieldSx}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          size="small"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <VisibilityOff fontSize="small" />
+                          ) : (
+                            <Visibility fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                  formHelperText: { sx: { fontFamily: AUTH.font, mx: 0, mt: 0.5 } },
+                }}
+              />
+            </Stack>
+
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              disabled={isLoading}
+              sx={{ ...authPrimaryButtonSx, mt: 2.5 }}
+            >
+              {isLoading ? (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <CircularProgress size={18} color="inherit" />
+                  Creating account…
+                </Box>
+              ) : (
+                "Create account"
+              )}
+            </Button>
+          </Box>
+        ) : !allowGoogle ? (
+          <Alert severity="info" sx={authAlertSx}>
+            Registration is not available. Please contact support.
+          </Alert>
+        ) : null}
+      </Stack>
     </AuthLayout>
   );
 }
