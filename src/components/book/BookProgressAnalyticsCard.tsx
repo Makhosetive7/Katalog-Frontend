@@ -51,7 +51,7 @@ export default function BookAnalytics() {
                   "#5DB7DE",
                   0.1
                 )} 0%, ${alpha("#F7FFF6", 0.3)} 100%)`,
-                borderRadius: 3,
+                    borderRadius: 0,
                 border: `1px solid ${alpha("#5DB7DE", 0.2)}`,
                 transition:
                   "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
@@ -114,7 +114,7 @@ export default function BookAnalytics() {
                     bgcolor: alpha(book.color || "#5DB7DE", 0.1),
                     px: 1.5,
                     py: 0.5,
-                    borderRadius: 2,
+                    borderRadius: 0,
                     mb: 2,
                   }}
                 >
@@ -154,11 +154,11 @@ export default function BookAnalytics() {
                     value={book.completionPercentage}
                     sx={{
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 0,
                       backgroundColor: alpha("#5DB7DE", 0.2),
                       "& .MuiLinearProgress-bar": {
                         backgroundColor: book.color || "#5DB7DE",
-                        borderRadius: 4,
+                        borderRadius: 0,
                       },
                     }}
                   />
@@ -172,7 +172,7 @@ export default function BookAnalytics() {
                     alignItems: "center",
                     p: 2,
                     bgcolor: alpha("#5DB7DE", 0.05),
-                    borderRadius: 2,
+                    borderRadius: 0,
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>

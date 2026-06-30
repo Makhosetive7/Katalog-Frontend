@@ -1,238 +1,327 @@
-// components/ChapterNotesModal.tsx
-import { useState, useEffect } from 'react';
+"use client";
+
+import { useState, useEffect } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
   Box,
+  TextField,
   Typography,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
   IconButton,
-  Divider,
   CircularProgress,
-} from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
-import { Book } from '@/types/books';
+  Alert,
+  alpha,
+} from "@mui/material";
+import { Add, Delete } from "@mui/icons-material";
+import { Book } from "@/types/books";
 import {
   useGetChapterNotesQuery,
   useCreateChapterNoteMutation,
   useDeleteChapterNoteMutation,
-} from '@/redux/api/books';
+} from "@/redux/api/books";
+import AppModal from "./AppModal";
+import { modalFieldSx, modalSectionSx } from "./modalTheme";
+import { DASH } from "@/components/dashboard/dashboardTheme";
+import { getBookCoverColor } from "@/components/dashboard/bookCoverColor";
 
 interface ChapterNotesModalProps {
-  book: Book;
+  book: Book & { _id?: string; genre?: string | string[] };
   open: boolean;
   onClose: () => void;
   onUpdate?: () => void;
 }
 
-export default function ChapterNotesModal({ book, open, onClose, onUpdate }: ChapterNotesModalProps) {
-  const [chapter, setChapter] = useState('');
-  const [note, setNote] = useState('');
-  const [keywords, setKeywords] = useState('');
+function getBookId(book: Book & { _id?: string }) {
+  return book._id || book.id;
+}
 
-  // RTK Query hooks
-  const { data: notesData, isLoading: fetching, refetch } = useGetChapterNotesQuery(book._id, {
-    skip: !open,
-  });
+export default function ChapterNotesModal({
+  book,
+  open,
+  onClose,
+  onUpdate,
+}: ChapterNotesModalProps) {
+  const bookId = getBookId(book);
+  const accent = getBookCoverColor(book.genre);
+
+  const [chapter, setChapter] = useState("");
+  const [note, setNote] = useState("");
+  const [keywords, setKeywords] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const { data: notesData, isLoading: fetching, refetch } = useGetChapterNotesQuery(
+    bookId,
+    { skip: !open || !bookId }
+  );
   const [createChapterNote, { isLoading: creating }] = useCreateChapterNoteMutation();
   const [deleteChapterNote] = useDeleteChapterNoteMutation();
 
-  const notes = notesData || [];
+  const notes = Array.isArray(notesData) ? notesData : [];
 
   useEffect(() => {
-    if (open) {
-      refetch();
-    }
+    if (open) refetch();
   }, [open, refetch]);
 
+  const resetForm = () => {
+    setChapter("");
+    setNote("");
+    setKeywords("");
+    setFormError(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = async () => {
-    if (!chapter || !note) {
-      alert('Chapter and note are required');
+    if (!chapter || !note.trim()) {
+      setFormError("Chapter number and note are required.");
       return;
     }
 
     try {
       await createChapterNote({
-        bookId: book._id,
+        bookId,
         body: {
-          chapter: parseInt(chapter),
-          note,
-          keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
+          chapter: parseInt(chapter, 10),
+          note: note.trim(),
+          keywords: keywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter(Boolean),
           isPublic: false,
         },
       }).unwrap();
 
-      console.log('Note created successfully');
-      setChapter('');
-      setNote('');
-      setKeywords('');
+      resetForm();
       onUpdate?.();
-      refetch(); 
-    } catch (error: any) {
-      console.error('Failed to create note:', error);
-      alert(`Error: ${error.data?.error || 'Failed to create note'}`);
+      refetch();
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === "object" && "data" in error
+          ? String((error as { data?: { error?: string } }).data?.error)
+          : "Failed to create note.";
+      setFormError(message);
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+    if (!confirm("Delete this note?")) return;
 
     try {
       await deleteChapterNote(noteId).unwrap();
       onUpdate?.();
-      refetch(); 
-    } catch (error: any) {
-      console.error('Failed to delete note:', error);
-      alert(`Error: ${error.data?.error || 'Failed to delete note'}`);
+      refetch();
+    } catch (error) {
+      console.error("Failed to delete note:", error);
     }
   };
 
-  const handleClose = () => {
-    setChapter('');
-    setNote('');
-    setKeywords('');
-    onClose();
-  };
-
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        Chapter Notes - {book.title}
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
-          {/* Add New Note Form */}
-          <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-            <Typography variant="h6" gutterBottom>
-              Add New Note
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Chapter"
-                type="number"
-                value={chapter}
-                onChange={(e) => setChapter(e.target.value)}
-                placeholder="e.g., 1"
-                required
-              />
-              
-              <TextField
-                label="Note"
-                multiline
-                rows={3}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Write your notes here..."
-                required
-              />
-              
-              <TextField
-                label="Keywords (comma-separated)"
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                placeholder="e.g., plot, character, theme"
-              />
-              
-              <Button
+    <AppModal
+      open={open}
+      onClose={handleClose}
+      label="Notes"
+      title="Chapter notes"
+      subtitle={book.title}
+      accent={accent}
+      maxWidth="md"
+      hideActions
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <Box sx={modalSectionSx}>
+          <Typography
+            sx={{
+              fontFamily: DASH.font,
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              color: DASH.dark,
+              mb: 1.5,
+            }}
+          >
+            Add a note
+          </Typography>
+
+          {formError && (
+            <Alert severity="error" sx={{ mb: 1.5, borderRadius: 0, fontFamily: DASH.font }}>
+              {formError}
+            </Alert>
+          )}
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <TextField
+              label="Chapter"
+              type="number"
+              value={chapter}
+              onChange={(e) => setChapter(e.target.value)}
+              inputProps={{ min: 1 }}
+              fullWidth
+              sx={modalFieldSx}
+            />
+            <TextField
+              label="Note"
+              multiline
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Quotes, themes, questions…"
+              fullWidth
+              sx={modalFieldSx}
+            />
+            <TextField
+              label="Keywords (comma-separated)"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              placeholder="plot, character, theme"
+              fullWidth
+              sx={modalFieldSx}
+            />
+            <Box>
+              <Chip
+                icon={<Add sx={{ fontSize: "16px !important" }} />}
+                label={creating ? "Adding…" : "Add note"}
                 onClick={handleSubmit}
-                variant="contained"
-                startIcon={<Add />}
                 disabled={creating}
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                {creating ? 'Adding...' : 'Add Note'}
-              </Button>
+                sx={{
+                  fontFamily: DASH.font,
+                  fontWeight: 600,
+                  bgcolor: DASH.dark,
+                  color: DASH.cream,
+                  borderRadius: 0,
+                  height: 36,
+                  px: 0.5,
+                  "&:hover": { bgcolor: DASH.wineDark },
+                  "& .MuiChip-icon": { color: DASH.cream },
+                }}
+              />
             </Box>
           </Box>
-
-          <Divider />
-
-          {/* Existing Notes List */}
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Existing Notes ({notes.length})
-            </Typography>
-            
-            {fetching ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                <CircularProgress size={24} />
-              </Box>
-            ) : notes.length === 0 ? (
-              <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                No notes yet. Add your first note above!
-              </Typography>
-            ) : (
-              <List>
-                {notes.map((noteItem) => (
-                  <ListItem
-                    key={noteItem._id}
-                    sx={{
-                      border: 1,
-                      borderColor: 'grey.200',
-                      borderRadius: 1,
-                      mb: 1,
-                      bgcolor: 'background.paper',
-                    }}
-                    secondaryAction={
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleDeleteNote(noteItem._id)}
-                        color="error"
-                      >
-                        <Delete />
-                      </IconButton>
-                    }
-                  >
-                    <ListItemText
-                      primary={
-                        <Box>
-                          <Typography variant="subtitle1" component="span">
-                            Chapter {noteItem.chapter}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" component="span" sx={{ ml: 1 }}>
-                            {new Date(noteItem.createdAt).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                      }
-                      secondary={
-                        <Box sx={{ mt: 1 }}>
-                          <Typography variant="body2" paragraph>
-                            {noteItem.note}
-                          </Typography>
-                          {noteItem.keywords && noteItem.keywords.length > 0 && (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {noteItem.keywords.map((keyword, index) => (
-                                <Chip
-                                  key={index}
-                                  label={keyword}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              ))}
-                            </Box>
-                          )}
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Box>
         </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+
+        <Box>
+          <Typography
+            sx={{
+              fontFamily: DASH.font,
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              color: DASH.dark,
+              mb: 1.25,
+            }}
+          >
+            Saved notes ({notes.length})
+          </Typography>
+
+          {fetching ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+              <CircularProgress size={24} sx={{ color: DASH.wine }} />
+            </Box>
+          ) : notes.length === 0 ? (
+            <Typography
+              sx={{
+                fontFamily: DASH.font,
+                fontSize: "0.8125rem",
+                color: alpha(DASH.dark, 0.45),
+                fontStyle: "italic",
+              }}
+            >
+              No notes yet — add your first one above.
+            </Typography>
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {notes.map((noteItem) => (
+                <Box
+                  key={noteItem._id}
+                  sx={{
+                    p: 1.75,
+                    border: `1px solid ${alpha(DASH.wine, 0.1)}`,
+                    bgcolor: "#FFFFFF",
+                    display: "flex",
+                    gap: 1.5,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: 1,
+                        mb: 0.5,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontFamily: DASH.font,
+                          fontWeight: 700,
+                          fontSize: "0.8125rem",
+                          color: DASH.dark,
+                        }}
+                      >
+                        Chapter {noteItem.chapter}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontFamily: DASH.font,
+                          fontSize: "0.7rem",
+                          color: alpha(DASH.dark, 0.4),
+                        }}
+                      >
+                        {new Date(noteItem.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontFamily: DASH.font,
+                        fontSize: "0.8125rem",
+                        color: alpha(DASH.dark, 0.65),
+                        lineHeight: 1.5,
+                        mb: noteItem.keywords?.length ? 1 : 0,
+                      }}
+                    >
+                      {noteItem.note}
+                    </Typography>
+                    {noteItem.keywords && noteItem.keywords.length > 0 && (
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                        {noteItem.keywords.map((keyword, index) => (
+                          <Chip
+                            key={index}
+                            label={keyword}
+                            size="small"
+                            sx={{
+                              height: 22,
+                              fontSize: "0.65rem",
+                              fontFamily: DASH.font,
+                              borderRadius: 0,
+                              bgcolor: alpha(accent, 0.08),
+                              color: accent,
+                              border: `1px solid ${alpha(accent, 0.15)}`,
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteNote(noteItem._id)}
+                    sx={{
+                      color: alpha(DASH.wine, 0.55),
+                      border: `1px solid ${alpha(DASH.wine, 0.12)}`,
+                      borderRadius: 0,
+                      width: 30,
+                      height: 30,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Delete sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Box>
+    </AppModal>
   );
 }

@@ -17,31 +17,33 @@ export default function StatisticsCards() {
     isFetching,
   } = useGetAllBooksProgressQuery();
 
+  const statistics = allBooksProgress?.statistics;
+
   const stats = [
     {
       title: "Total Books",
-      value: allBooksProgress?.[0]?.totalBooks ?? "-",
+      value: statistics?.totalBooks ?? "-",
       icon: <LibraryIcon sx={{ fontSize: 32 }} />,
       color: "#5DB7DE",
       gradient: "linear-gradient(135deg, #5DB7DE 0%, #A3D9FF 100%)",
     },
     {
       title: "Completed",
-      value: allBooksProgress?.[0]?.completedBooks ?? "-",
+      value: statistics?.completedBooks ?? "-",
       icon: <CheckIcon sx={{ fontSize: 32 }} />,
       color: "#4CAF50",
       gradient: "linear-gradient(135deg, #4CAF50 0%, #81C784 100%)",
     },
     {
       title: "Avg Completion",
-      value: `${allBooksProgress?.[0]?.averageCompletion ?? "-"}%`,
+      value: `${statistics?.averageCompletion ?? "-"}%`,
       icon: <TrendIcon sx={{ fontSize: 32 }} />,
       color: "#FF9800",
       gradient: "linear-gradient(135deg, #FF9800 0%, #FFB74D 100%)",
     },
     {
       title: "Completion Rate",
-      value: `${allBooksProgress?.[0]?.completionRate ?? "-"}%`,
+      value: `${statistics?.completionRate ?? "-"}%`,
       icon: <TimeIcon sx={{ fontSize: 32 }} />,
       color: "#9C27B0",
       gradient: "linear-gradient(135deg, #9C27B0 0%, #BA68C8 100%)",
@@ -61,7 +63,7 @@ export default function StatisticsCards() {
             sx={{
               background: stat.gradient,
               color: "white",
-              borderRadius: 3,
+              borderRadius: 0,
               height: "100%",
               transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
               "&:hover": {
@@ -83,7 +85,7 @@ export default function StatisticsCards() {
                 <Box
                   sx={{
                     bgcolor: "rgba(255, 255, 255, 0.2)",
-                    borderRadius: "50%",
+                    borderRadius: 0,
                     p: 1.5,
                     display: "flex",
                     alignItems: "center",

@@ -2,214 +2,252 @@
 
 import { useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardMedia,
-  Typography,
   Box,
-  Chip,
+  Typography,
+  LinearProgress,
   Button,
-  Stack,
-  CircularProgress,
-  Grid,
-  useTheme,
-  useMediaQuery,
+  Chip,
+  alpha,
 } from "@mui/material";
+import {
+  MenuBook,
+  TrendingUp,
+  EditNote,
+  EmojiEvents,
+  InfoOutlined,
+} from "@mui/icons-material";
 import BookProgressModal from "./BookProgressModal";
 import BookDetailsModal from "./BookDetailsModal";
 import BookNotesModal from "./ChapterNotesModal";
 import ReadingGoalModal from "./ReadingGoalModal";
 import { Book } from "@/types/books";
-
+import { DASH } from "@/components/dashboard/dashboardTheme";
 
 interface BookCardProps {
   book: Book;
 }
 
 export default function BookCard({ book }: BookCardProps) {
-  const theme = useTheme();
-  const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
-
   const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
   const progress = book.pages
-    ? Math.round((book.currentPage / book.pages) * 100)
+    ? Math.round(((book.currentPage ?? 0) / book.pages) * 100)
     : book.completionPercentage ?? 0;
 
-  const statusColors = {
-    "In-Progress": "primary",
-    Completed: "success",
-    Planned: "info",
-    Dropped: "warning",
-  } as const;
+  const isReading = book.status === "In-Progress";
 
   return (
     <>
-      <Grid item xs={12} sm={6} md={4}>
-        <Card
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          borderRadius: 0,
+          bgcolor: "#FFFFFF",
+          border: `1px solid ${alpha(DASH.wine, 0.08)}`,
+          overflow: "hidden",
+          height: "100%",
+          transition: "box-shadow 0.2s ease, transform 0.2s ease",
+          "&:hover": {
+            boxShadow: "0 8px 28px rgba(30, 22, 18, 0.07)",
+            transform: "translateY(-2px)",
+          },
+        }}
+      >
+        {/* Cover */}
+        <Box
           sx={{
+            width: { xs: "100%", sm: 120 },
+            minHeight: { xs: 140, sm: "auto" },
+            flexShrink: 0,
+            bgcolor: alpha(DASH.wine, 0.06),
             display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            borderRadius: 3,
-            boxShadow: 4,
-            transition: "transform 0.2s, box-shadow 0.2s",
-            "&:hover": {
-              transform: "translateY(-4px)",
-              boxShadow: 8,
-            },
-            height: { xs: "auto", sm: 250 },
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
           }}
         >
-          {/* Book Cover */}
           {book.coverImage ? (
-            <CardMedia
+            <Box
               component="img"
-              image={book.coverImage}
-              alt={book.title}
-              sx={{
-                width: { xs: "100%", sm: 150 },
-                height: { xs: 180, sm: "100%" },
-                objectFit: "cover",
-              }}
+              src={book.coverImage}
+              alt=""
+              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
           ) : (
-            <Box
-              sx={{
-                width: { xs: "100%", sm: 150 },
-                height: { xs: 180, sm: "100%" },
-                bgcolor: "grey.200",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "text.secondary",
-                fontSize: "1rem",
-              }}
-            >
-              No Cover
-            </Box>
+            <MenuBook sx={{ fontSize: 36, color: alpha(DASH.wine, 0.35) }} />
           )}
+        </Box>
 
-          {/* Book Info */}
-          <CardContent
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              p: 2,
-              position: "relative",
-            }}
-          >
-            {/* Progress circle */}
-            {book.status === "In-Progress" && (
-              <CircularProgress
-                variant="determinate"
-                value={progress}
-                size={50}
-                thickness={5}
-                sx={{
-                  position: "absolute",
-                  top: 16,
-                  right: 16,
-                  bgcolor: "background.paper",
-                  borderRadius: "50%",
-                  p: 0.5,
-                  boxShadow: 2,
-                  zIndex: 1,
-                }}
-              />
-            )}
-
-            {/* Title & Author */}
-            <Box sx={{ mb: 1, pr: book.status === "In-Progress" ? 6 : 0 }}>
+        {/* Content */}
+        <Box sx={{ flex: 1, p: { xs: 2, sm: 2.25 }, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1, mb: 0.75 }}>
+            <Box sx={{ minWidth: 0 }}>
               <Typography
-                variant="subtitle1"
-                fontWeight="bold"
-                noWrap
-                sx={{ mb: 0.3 }}
+                sx={{
+                  fontFamily: DASH.font,
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  color: DASH.dark,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
               >
                 {book.title}
               </Typography>
-              <Typography variant="body2" color="text.secondary" noWrap>
-                {book.author || "Unknown Author"}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" noWrap>
-                Genre: {book.genre || "Fantasy"}
+              <Typography
+                sx={{
+                  fontFamily: DASH.font,
+                  fontSize: "0.8rem",
+                  color: alpha(DASH.dark, 0.5),
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {book.author || "Unknown author"}
+                {book.genre ? ` · ${book.genre}` : ""}
               </Typography>
             </Box>
-
-            {/* Status Chip */}
             <Chip
               label={book.status}
-              color={statusColors[book.status as keyof typeof statusColors]}
               size="small"
-              sx={{ mb: 1.5, width: "fit-content" }}
+              sx={{
+                height: 22,
+                fontSize: "0.7rem",
+                fontFamily: DASH.font,
+                fontWeight: 600,
+                bgcolor: isReading ? alpha(DASH.wine, 0.1) : alpha(DASH.green, 0.1),
+                color: isReading ? DASH.wine : DASH.green,
+                flexShrink: 0,
+              }}
             />
+          </Box>
 
-            {/* Progress Info */}
-            {book.status === "In-Progress" && (
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                {book.currentPage}/{book.pages} pages ({progress}%)
-              </Typography>
-            )}
+          {isReading && (
+            <Box sx={{ mb: 1.5 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                <Typography sx={{ fontFamily: DASH.font, fontSize: "0.75rem", color: alpha(DASH.dark, 0.5) }}>
+                  {book.currentPage ?? 0} / {book.pages ?? "?"} pages
+                </Typography>
+                <Typography
+                  sx={{
+                    fontFamily: DASH.font,
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color: progress >= 100 ? DASH.green : DASH.wine,
+                  }}
+                >
+                  {progress}%
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={Math.min(progress, 100)}
+                sx={{
+                  height: 6,
+                  borderRadius: 0,
+                  bgcolor: alpha(DASH.wine, 0.08),
+                  "& .MuiLinearProgress-bar": {
+                    borderRadius: 0,
+                    bgcolor: progress >= 100 ? DASH.green : DASH.wine,
+                  },
+                }}
+              />
+            </Box>
+          )}
 
-            {/* Rating */}
-            {book.rating && (
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                ⭐ {book.rating}/5
-              </Typography>
-            )}
+          {book.rating != null && book.rating > 0 && (
+            <Typography sx={{ fontFamily: DASH.font, fontSize: "0.75rem", color: alpha(DASH.dark, 0.45), mb: 1 }}>
+              Rated {book.rating}/5
+            </Typography>
+          )}
 
-            {/* Action Buttons */}
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={1}
-              sx={{ mt: "auto", flexWrap: "wrap", gap: 1 }}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 0.75,
+              mt: "auto",
+              pt: 1,
+            }}
+          >
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<TrendingUp sx={{ fontSize: "16px !important" }} />}
+              onClick={() => setIsProgressModalOpen(true)}
+              sx={{
+                textTransform: "none",
+                fontFamily: DASH.font,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                bgcolor: DASH.dark,
+                boxShadow: "none",
+                py: 0.6,
+                "&:hover": { bgcolor: DASH.wineDark, boxShadow: "none" },
+              }}
             >
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                fullWidth={!isSmUp}
-                onClick={() => setIsDetailsModalOpen(true)}
-              >
-                View Details
-              </Button>
-              <Button
-                variant="outlined"
-                color="secondary"
-                size="small"
-                fullWidth={!isSmUp}
-                onClick={() => setIsProgressModalOpen(true)}
-              >
-                Update Progress
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                fullWidth={!isSmUp}
-                onClick={() => setIsNotesModalOpen(true)}
-              >
-                Chapter Notes
-              </Button>
-              <Button
-                variant="outlined"
-                color="success"
-                size="small"
-                fullWidth={!isSmUp}
-                onClick={() => setIsGoalModalOpen(true)}
-              >
-                Set Goal
-              </Button>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Grid>
+              Update
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EditNote sx={{ fontSize: "16px !important" }} />}
+              onClick={() => setIsNotesModalOpen(true)}
+              sx={{
+                textTransform: "none",
+                fontFamily: DASH.font,
+                fontSize: "0.75rem",
+                borderColor: alpha(DASH.wine, 0.25),
+                color: DASH.wine,
+                py: 0.6,
+                "&:hover": { borderColor: DASH.wine, bgcolor: alpha(DASH.wine, 0.04) },
+              }}
+            >
+              Notes
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EmojiEvents sx={{ fontSize: "16px !important" }} />}
+              onClick={() => setIsGoalModalOpen(true)}
+              sx={{
+                textTransform: "none",
+                fontFamily: DASH.font,
+                fontSize: "0.75rem",
+                borderColor: alpha(DASH.wine, 0.25),
+                color: DASH.wine,
+                py: 0.6,
+                "&:hover": { borderColor: DASH.wine, bgcolor: alpha(DASH.wine, 0.04) },
+              }}
+            >
+              Goal
+            </Button>
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<InfoOutlined sx={{ fontSize: "16px !important" }} />}
+              onClick={() => setIsDetailsModalOpen(true)}
+              sx={{
+                textTransform: "none",
+                fontFamily: DASH.font,
+                fontSize: "0.75rem",
+                color: alpha(DASH.dark, 0.55),
+                py: 0.6,
+                minWidth: 0,
+              }}
+            >
+              Details
+            </Button>
+          </Box>
+        </Box>
+      </Box>
 
-      {/* Modals */}
       <BookProgressModal
         book={book}
         open={isProgressModalOpen}

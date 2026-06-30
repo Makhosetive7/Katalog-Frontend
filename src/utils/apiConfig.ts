@@ -1,6 +1,12 @@
 
 import axios from "axios";
 import { createApi, fetchBaseQuery, BaseQueryFn, FetchArgs, FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
+import { clearAuthSession } from "./authStorage";
+
+async function handleUnauthorized() {
+  clearAuthSession();
+  window.location.href = "/auth/login";
+}
 
 // Type-safe API creator
 export function createCustomApi<Endpoints extends Record<string, any>>(
@@ -16,8 +22,10 @@ export function createCustomApi<Endpoints extends Record<string, any>>(
     baseQuery: fetchBaseQuery({
       baseUrl: "http://localhost:5000/api",
       prepareHeaders: (headers) => {
-        const token = localStorage.getItem("token");
-        if (token) headers.set("Authorization", `Bearer ${token}`);
+        if (typeof window !== "undefined") {
+          const token = localStorage.getItem("token");
+          if (token) headers.set("Authorization", `Bearer ${token}`);
+        }
         return headers;
       },
     }),
@@ -39,8 +47,10 @@ export const apiConfig = axios.create({
 // Request interceptor to add token automatically
 apiConfig.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -51,9 +61,7 @@ apiConfig.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      void handleUnauthorized();
     }
     return Promise.reject(error);
   }

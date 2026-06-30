@@ -1,166 +1,219 @@
-import { useState } from 'react';
+"use client";
+
+import { useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
   Box,
+  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Typography,
-} from '@mui/material';
-import { Book } from '@/types/books';
-import { useCreateReadingGoalMutation } from '@/redux/api/books';
+  alpha,
+} from "@mui/material";
+import { Book } from "@/types/books";
+import { useCreateReadingGoalMutation } from "@/redux/api/books";
+import AppModal from "./AppModal";
+import { modalFieldSx, modalSelectSx } from "./modalTheme";
+import { DASH } from "@/components/dashboard/dashboardTheme";
+import { getBookCoverColor } from "@/components/dashboard/bookCoverColor";
 
 interface ReadingGoalModalProps {
-  book: Book;
+  book: Book & { _id?: string; pages?: number; genre?: string | string[] };
   open: boolean;
   onClose: () => void;
   onUpdate?: () => void;
 }
 
-export default function ReadingGoalModal({ book, open, onClose, onUpdate }: ReadingGoalModalProps) {
-  const [type, setType] = useState('pages');
-  const [target, setTarget] = useState('');
-  const [timeFrame, setTimeFrame] = useState('custom');
-  const [endDate, setEndDate] = useState('');
-  
-  const [createReadingGoal, { isLoading: loading }] = useCreateReadingGoalMutation();
+const GOAL_TYPES = [
+  { value: "pages", label: "Pages" },
+  { value: "chapters", label: "Chapters" },
+  { value: "time", label: "Reading time (minutes)" },
+  { value: "completion", label: "Completion %" },
+];
 
-  const goalTypes = [
-    { value: 'pages', label: 'Pages' },
-    { value: 'chapters', label: 'Chapters' },
-    { value: 'time', label: 'Reading Time (minutes)' },
-    { value: 'completion', label: 'Completion %' },
-  ];
+const TIME_FRAMES = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "custom", label: "Custom date" },
+];
 
-  const timeFrames = [
-    { value: 'daily', label: 'Daily' },
-    { value: 'weekly', label: 'Weekly' },
-    { value: 'monthly', label: 'Monthly' },
-    { value: 'custom', label: 'Custom Date' },
-  ];
+function getBookId(book: Book & { _id?: string }) {
+  return book._id || book.id;
+}
 
-  const handleSubmit = async () => {
-    if (!target || !endDate) {
-      alert('Please fill all required fields');
-      return;
-    }
+export default function ReadingGoalModal({
+  book,
+  open,
+  onClose,
+  onUpdate,
+}: ReadingGoalModalProps) {
+  const accent = getBookCoverColor(book.genre);
+  const totalPages = typeof book.pages === "number" ? book.pages : 0;
+  const currentPage = book.currentPage ?? 0;
+  const progressPct =
+    totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
 
-    try {
-      await createReadingGoal({
-        bookId: book._id,
-        body: {
-          type,
-          target: parseInt(target),
-          timeframe: timeFrame,
-          endDate: new Date(endDate).toISOString(),
-        },
-      }).unwrap();
+  const [type, setType] = useState("pages");
+  const [target, setTarget] = useState("");
+  const [timeFrame, setTimeFrame] = useState("custom");
+  const [endDate, setEndDate] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-      console.log('Goal created successfully');
-      onUpdate?.();
-      handleClose();
-    } catch (error: any) {
-      console.error('Failed to create reading goal:', error);
-      alert(`Error: ${error.data?.error || 'Failed to create reading goal'}`);
-    }
+  const [createReadingGoal, { isLoading }] = useCreateReadingGoalMutation();
+
+  const reset = () => {
+    setType("pages");
+    setTarget("");
+    setTimeFrame("custom");
+    setEndDate("");
+    setError(null);
   };
 
   const handleClose = () => {
-    setType('pages');
-    setTarget('');
-    setTimeFrame('custom');
-    setEndDate('');
+    reset();
     onClose();
   };
 
   const getTargetPlaceholder = () => {
     switch (type) {
-      case 'pages': return 'e.g., 50';
-      case 'chapters': return 'e.g., 5';
-      case 'time': return 'e.g., 120 (minutes)';
-      case 'completion': return 'e.g., 100 (%)';
-      default: return '';
+      case "pages":
+        return "e.g. 50";
+      case "chapters":
+        return "e.g. 5";
+      case "time":
+        return "e.g. 120";
+      case "completion":
+        return "e.g. 100";
+      default:
+        return "";
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!target || !endDate) {
+      setError("Target and end date are required.");
+      return;
+    }
+
+    try {
+      await createReadingGoal({
+        bookId: getBookId(book),
+        body: {
+          type,
+          target: parseInt(target, 10),
+          timeframe: timeFrame,
+          endDate: new Date(endDate).toISOString(),
+        },
+      }).unwrap();
+
+      onUpdate?.();
+      handleClose();
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "data" in err
+          ? String((err as { data?: { error?: string } }).data?.error)
+          : "Failed to create goal.";
+      setError(message);
     }
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        Set Reading Goal - {book.title}
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-          <FormControl fullWidth>
-            <InputLabel>Goal Type</InputLabel>
-            <Select
-              value={type}
-              label="Goal Type"
-              onChange={(e) => setType(e.target.value)}
-            >
-              {goalTypes.map((goal) => (
-                <MenuItem key={goal.value} value={goal.value}>
-                  {goal.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="Target"
-            type="number"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            placeholder={getTargetPlaceholder()}
-            required
-          />
-
-          <FormControl fullWidth>
-            <InputLabel>Time Frame</InputLabel>
-            <Select
-              value={timeFrame}
-              label="Time Frame"
-              onChange={(e) => setTimeFrame(e.target.value)}
-            >
-              {timeFrames.map((frame) => (
-                <MenuItem key={frame.value} value={frame.value}>
-                  {frame.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="End Date"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            required
-          />
-
-          <Typography variant="body2" color="text.secondary">
-            Current: {book.currentPage}/{book.pages} pages • {Math.round((book.currentPage / book.pages) * 100)}% complete
+    <AppModal
+      open={open}
+      onClose={handleClose}
+      label="Goals"
+      title="Set a reading goal"
+      subtitle={book.title}
+      accent={DASH.gold}
+      onSubmit={handleSubmit}
+      submitLabel="Set goal"
+      isSubmitting={isLoading}
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {totalPages > 0 && (
+          <Typography
+            sx={{
+              fontFamily: DASH.font,
+              fontSize: "0.8125rem",
+              color: alpha(DASH.dark, 0.5),
+              p: 1.5,
+              border: `1px solid ${alpha(accent, 0.15)}`,
+              bgcolor: alpha(accent, 0.04),
+            }}
+          >
+            Current: {currentPage} / {totalPages} pages · {progressPct}% through the book
           </Typography>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={loading}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={loading}
-        >
-          {loading ? 'Creating...' : 'Set Goal'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        )}
+
+        {error && (
+          <Typography
+            sx={{
+              fontFamily: DASH.font,
+              fontSize: "0.8125rem",
+              color: DASH.wine,
+              p: 1.25,
+              border: `1px solid ${alpha(DASH.wine, 0.2)}`,
+              bgcolor: alpha(DASH.wine, 0.04),
+            }}
+          >
+            {error}
+          </Typography>
+        )}
+
+        <FormControl fullWidth>
+          <InputLabel sx={{ fontFamily: DASH.font }}>Goal type</InputLabel>
+          <Select
+            value={type}
+            label="Goal type"
+            onChange={(e) => setType(e.target.value)}
+            sx={modalSelectSx}
+          >
+            {GOAL_TYPES.map((goal) => (
+              <MenuItem key={goal.value} value={goal.value} sx={{ fontFamily: DASH.font }}>
+                {goal.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <TextField
+          label="Target"
+          type="number"
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+          placeholder={getTargetPlaceholder()}
+          fullWidth
+          sx={modalFieldSx}
+        />
+
+        <FormControl fullWidth>
+          <InputLabel sx={{ fontFamily: DASH.font }}>Time frame</InputLabel>
+          <Select
+            value={timeFrame}
+            label="Time frame"
+            onChange={(e) => setTimeFrame(e.target.value)}
+            sx={modalSelectSx}
+          >
+            {TIME_FRAMES.map((frame) => (
+              <MenuItem key={frame.value} value={frame.value} sx={{ fontFamily: DASH.font }}>
+                {frame.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <TextField
+          label="End date"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+          sx={modalFieldSx}
+        />
+      </Box>
+    </AppModal>
   );
 }

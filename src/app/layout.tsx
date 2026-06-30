@@ -5,6 +5,9 @@ import { Provider } from "react-redux";
 import { store } from "../redux/store/store";
 import { CssBaseline } from "@mui/material";
 import Navbar from "@/components/layout/navBar";
+import AppThemeProvider from "@/components/providers/AppThemeProvider";
+import AuthCacheSync from "@/components/providers/AuthCacheSync";
+import "@/app/globals.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,9 +15,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head />
       <body>
         <Provider store={store}>
-          <CssBaseline />
-          <Navbar/>
-          {children}
+          <AppThemeProvider>
+            <AuthCacheSync />
+            <CssBaseline />
+            <Navbar/>
+            {children}
+          </AppThemeProvider>
         </Provider>
       </body>
     </html>

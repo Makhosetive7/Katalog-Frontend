@@ -1,50 +1,112 @@
 "use client";
 
-import { Grid, Typography, Box, Container } from "@mui/material";
+import { Grid, Box, Typography, alpha } from "@mui/material";
+import { AutoStories } from "@mui/icons-material";
 import BookCard from "./BookCard";
 import { Book } from "@/types/books";
+import { DASH } from "@/components/dashboard/dashboardTheme";
 
 interface BookListProps {
   books: Book[];
   isLoading?: boolean;
-  status?: "Completed" | "Dropped" | "Planned" | "InProgress";
+  emptyTitle?: string;
+  emptyDescription?: string;
+  onAdd?: () => void;
 }
 
-export default function BookList({ books = [], isLoading, status }: BookListProps) {
+function BookSkeleton() {
+  return (
+    <Box
+      sx={{
+        height: 200,
+        borderRadius: 0,
+        bgcolor: alpha(DASH.wine, 0.04),
+        border: `1px solid ${alpha(DASH.wine, 0.06)}`,
+      }}
+    />
+  );
+}
+
+export default function BookList({
+  books = [],
+  isLoading,
+  emptyTitle = "No books yet",
+  emptyDescription = "Add a book to start tracking your reading progress.",
+}: BookListProps) {
   if (isLoading) {
     return (
-      <Container maxWidth="xl" sx={{ px: 0 }}>
-        <Grid container spacing={2}>
-          {[...Array(6)].map((_, index) => (
-            <Grid item xs={12} sm={6} key={index}>
-              <Box sx={{ height: 240, bgcolor: "grey.100", borderRadius: 3 }} />
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
+      <Grid container spacing={2}>
+        {[...Array(4)].map((_, i) => (
+          <Grid key={i} size={{ xs: 12, md: 6 }}>
+            <BookSkeleton />
+          </Grid>
+        ))}
+      </Grid>
     );
   }
 
   if (books.length === 0) {
     return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
-        <Typography variant="h6" color="textSecondary">
-          No books found
+      <Box
+        sx={{
+          textAlign: "center",
+          py: { xs: 6, md: 8 },
+          px: 2,
+          borderRadius: 0,
+          bgcolor: "#FFFFFF",
+          border: `1px dashed ${alpha(DASH.wine, 0.2)}`,
+        }}
+      >
+        <Box
+          sx={{
+            width: 56,
+            height: 56,
+            borderRadius: 0,
+            bgcolor: alpha(DASH.wine, 0.08),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mx: "auto",
+            mb: 2,
+            color: DASH.wine,
+          }}
+        >
+          <AutoStories />
+        </Box>
+        <Typography
+          sx={{
+            fontFamily: DASH.serif,
+            fontWeight: 700,
+            fontSize: "1.15rem",
+            color: DASH.dark,
+            mb: 0.75,
+          }}
+        >
+          {emptyTitle}
         </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Add some books to get started!
+        <Typography
+          sx={{
+            fontFamily: DASH.font,
+            fontSize: "0.875rem",
+            color: alpha(DASH.dark, 0.5),
+            maxWidth: 320,
+            mx: "auto",
+            lineHeight: 1.55,
+          }}
+        >
+          {emptyDescription}
         </Typography>
       </Box>
     );
   }
 
   return (
-    <Container maxWidth="xl" sx={{ px: 0 }}>
-      <Grid container spacing={2}>
-        {books.map((book) => (
-          <BookCard key={book.id || book._id} book={book} />
-        ))}
-      </Grid>
-    </Container>
+    <Grid container spacing={2}>
+      {books.map((book) => (
+        <Grid key={book.id || (book as Book & { _id?: string })._id} size={{ xs: 12, lg: 6 }}>
+          <BookCard book={book} />
+        </Grid>
+      ))}
+    </Grid>
   );
 }

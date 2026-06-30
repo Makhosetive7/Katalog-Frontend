@@ -1,30 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box,
-  Alert,
-  Snackbar,
-} from "@mui/material";
+import { useState } from "react";
+import { Box, TextField, Alert } from "@mui/material";
 import { useCreateChapterNoteMutation } from "@/redux/api/books";
+import AppModal from "./AppModal";
+import { modalFieldSx } from "./modalTheme";
+import { DASH } from "@/components/dashboard/dashboardTheme";
 
-interface AddNoteDialogProps {
+interface UpdateBookNotesModalProps {
   open: boolean;
   onClose: () => void;
   bookId: string;
 }
 
-export default function UpdateBookNotesModal({ open, onClose, bookId }: AddNoteDialogProps) {
-  const [chapter, setChapter] = useState<string>("");
-  const [noteText, setNoteText] = useState<string>("");
+export default function UpdateBookNotesModal({
+  open,
+  onClose,
+  bookId,
+}: UpdateBookNotesModalProps) {
+  const [chapter, setChapter] = useState("");
+  const [noteText, setNoteText] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [successOpen, setSuccessOpen] = useState(false);
 
   const [createNote, { isLoading }] = useCreateChapterNoteMutation();
 
@@ -34,7 +30,7 @@ export default function UpdateBookNotesModal({ open, onClose, bookId }: AddNoteD
     setError(null);
   };
 
-  const handleCancel = () => {
+  const handleClose = () => {
     reset();
     onClose();
   };
@@ -42,7 +38,6 @@ export default function UpdateBookNotesModal({ open, onClose, bookId }: AddNoteD
   const handleSave = async () => {
     setError(null);
 
-    // basic validation
     const chapNum = Number(chapter);
     if (!bookId) {
       setError("No book selected.");
@@ -58,77 +53,61 @@ export default function UpdateBookNotesModal({ open, onClose, bookId }: AddNoteD
     }
 
     try {
-      // **Important**: pass `body` exactly as your API expects
       await createNote({
         bookId,
         body: { chapter: chapNum, note: noteText.trim() },
       }).unwrap();
 
-      setSuccessOpen(true);
-      reset();
-      onClose(); // close dialog after success
-      // RTK Query will invalidate tags (if your mutation is configured) and refetch notes automatically
-    } catch (err: any) {
-      console.error("Failed to create chapter note:", err);
-      // try to surface useful message
+      handleClose();
+    } catch (err: unknown) {
       const message =
-        err?.data?.error ||
-        err?.error?.message ||
-        (typeof err === "string" ? err : "Failed to create note.");
+        err && typeof err === "object" && "data" in err
+          ? String((err as { data?: { error?: string } }).data?.error)
+          : "Failed to create note.";
       setError(message);
     }
   };
 
   return (
-    <>
-      <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="sm">
-        <DialogTitle>Add a New Note</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 1 }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
+    <AppModal
+      open={open}
+      onClose={handleClose}
+      label="Notes"
+      title="Add a note"
+      subtitle="Capture thoughts for a chapter."
+      accent={DASH.wine}
+      onSubmit={handleSave}
+      submitLabel="Save note"
+      isSubmitting={isLoading}
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {error && (
+          <Alert severity="error" sx={{ borderRadius: 0, fontFamily: DASH.font }}>
+            {error}
+          </Alert>
+        )}
 
-            <TextField
-              label="Chapter"
-              type="number"
-              fullWidth
-              value={chapter}
-              onChange={(e) => setChapter(e.target.value)}
-              margin="normal"
-              inputProps={{ min: 1 }}
-            />
+        <TextField
+          label="Chapter"
+          type="number"
+          value={chapter}
+          onChange={(e) => setChapter(e.target.value)}
+          inputProps={{ min: 1 }}
+          fullWidth
+          sx={modalFieldSx}
+        />
 
-            <TextField
-              label="Note"
-              multiline
-              rows={5}
-              fullWidth
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              margin="normal"
-            />
-          </Box>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={handleCancel} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} variant="contained" disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={successOpen}
-        autoHideDuration={2500}
-        onClose={() => setSuccessOpen(false)}
-        message="Note added"
-      />
-    </>
+        <TextField
+          label="Note"
+          multiline
+          rows={5}
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          placeholder="Quotes, themes, questions…"
+          fullWidth
+          sx={modalFieldSx}
+        />
+      </Box>
+    </AppModal>
   );
 }

@@ -5,27 +5,20 @@ import { useRouter } from "next/navigation";
 import {
   TextField,
   Button,
-  Container,
-  Typography,
   Box,
-  Paper,
-  Grid,
   Alert,
   CircularProgress,
   InputAdornment,
   IconButton,
-  Divider,
+  Stack,
 } from "@mui/material";
-import {
-  Visibility,
-  VisibilityOff,
-  Email,
-  Lock,
-  Book,
-} from "@mui/icons-material";
-import { useLoginMutation } from "@/redux/api/books";
-import Lottie from "lottie-react";
-import candidateAnimation from "@/public/animations/andidate.json";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { useLoginMutation, useDemoLoginMutation } from "@/redux/api/books";
+import AuthLayout from "@/components/auth/AuthLayout";
+import AuthLink, { AuthFooterText } from "@/components/auth/AuthLink";
+import { getApiErrorMessage } from "@/components/auth/getApiErrorMessage";
+import { AUTH, authFieldSx, authPrimaryButtonSx, authGhostButtonSx, authAlertSx } from "@/components/auth/authTheme";
+import { setAuthSession } from "@/utils/authStorage";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,324 +28,135 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   const [login, { isLoading }] = useLoginMutation();
+  const [demoLogin, { isLoading: isDemoLoading }] = useDemoLoginMutation();
 
   const handleLogin = async () => {
     if (!email || !password) {
       setError("Please enter both email and password");
       return;
     }
-
     try {
       setError("");
       const result = await login({ email, password }).unwrap();
-      console.log("Login success:", result);
-
-      // Save token locally
-      localStorage.setItem("token", result.token);
-      localStorage.setItem("user", JSON.stringify(result.user));
-
+      setAuthSession(result.token, result.user);
+      router.refresh();
       router.push("/dashboard");
-    } catch (error: any) {
-      console.error("Login failed:", error);
-      setError(error?.data?.message || "Login failed. Please try again.");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Login failed. Please try again."));
     }
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter") {
-      handleLogin();
+  const handleDemoLogin = async () => {
+    try {
+      setError("");
+      const result = await demoLogin().unwrap();
+      setAuthSession(result.token, result.user);
+      router.refresh();
+      router.push("/dashboard");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Demo login failed. Please try again."));
     }
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        py: 4,
-        px: 2,
-      }}
+    <AuthLayout
+      quote="Pick up where you left off."
+      title="Sign in"
+      subtitle="Welcome back — your shelf is waiting."
+      footer={
+        <AuthFooterText>
+          New to Katalog? <AuthLink href="/auth/register">Create an account</AuthLink>
+        </AuthFooterText>
+      }
     >
-      <Container
-        maxWidth="lg"
-        sx={{ display: "flex", justifyContent: "center" }}
+      {error && (
+        <Alert severity="error" sx={authAlertSx}>
+          {error}
+        </Alert>
+      )}
+
+      <Box
+        component="form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleLogin();
+        }}
       >
-        <Paper
-          elevation={8}
-          sx={{
-            borderRadius: 4,
-            overflow: "hidden",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-            maxWidth: 1000,
-            width: "100%",
-          }}
-        >
-          <Grid container>
-            {/* Animation Side */}
-            <Grid
-              item
-              xs={12}
-              md={6}
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-                p: { xs: 4, md: 6 },
-                textAlign: "center",
-                borderRight: { md: "1px solid #e0e0e0" },
-              }}
-            >
-              <Box sx={{ width: "100%", maxWidth: 320, mb: 4 }}>
-                <Lottie
-                  animationData={candidateAnimation}
-                  loop={true}
-                  style={{ width: "100%", height: "auto" }}
-                />
-              </Box>
-              <Typography
-                variant="h4"
-                fontWeight="bold"
-                color="primary"
-                gutterBottom
-                sx={{ mb: 2 }}
-              >
-                Welcome Back!
-              </Typography>
-              <Typography
-                variant="h6"
-                color="text.secondary"
-                sx={{
-                  maxWidth: 400,
-                  lineHeight: 1.6,
-                  mb: 3,
-                }}
-              >
-                Continue your reading journey and discover new stories in your
-                personal library
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  color: "primary.main",
-                }}
-              >
-                <Book sx={{ fontSize: 28 }} />
-                <Typography variant="body1" fontWeight="medium">
-                  Your stories await
-                </Typography>
-              </Box>
-            </Grid>
+        <Stack spacing={1.5}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
+            sx={authFieldSx}
+          />
 
-            {/* Form Side */}
-            <Grid
-              item
-              xs={12}
-              md={6}
-              sx={{
-                p: { xs: 4, md: 6 },
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                background: "white",
-              }}
-            >
-              <Box sx={{ maxWidth: 400, width: "100%", mx: "auto" }}>
-                {/* Header */}
-                <Box sx={{ textAlign: "center", mb: 4 }}>
-                  <Typography
-                    variant="h3"
-                    fontWeight="bold"
-                    color="primary"
-                    gutterBottom
-                  >
-                    Sign In
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    Enter your credentials to access your account
-                  </Typography>
-                </Box>
-
-                {/* Error Alert */}
-                {error && (
-                  <Alert
-                    severity="error"
-                    sx={{
-                      mb: 3,
-                      borderRadius: 2,
-                      "& .MuiAlert-message": {
-                        width: "100%",
-                      },
-                    }}
-                  >
-                    {error}
-                  </Alert>
-                )}
-
-                {/* Login Form */}
-                <Box component="form" sx={{ width: "100%" }}>
-                  <TextField
-                    fullWidth
-                    label="Email Address"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    disabled={isLoading}
-                    sx={{
-                      mb: 3,
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 2,
-                        "&:hover fieldset": {
-                          borderColor: "primary.main",
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: "primary.main",
-                          borderWidth: 2,
-                        },
-                      },
-                    }}
-                    variant="outlined"
-                    placeholder="Enter your email address"
-                  />
-
-                  <TextField
-                    fullWidth
-                    label="Password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    disabled={isLoading}
-                    sx={{
-                      mb: 4,
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 2,
-                        "&:hover fieldset": {
-                          borderColor: "primary.main",
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: "primary.main",
-                          borderWidth: 2,
-                        },
-                      },
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                            color="primary"
-                          >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                    variant="outlined"
-                    placeholder="Enter your password"
-                  />
-
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    onClick={handleLogin}
-                    disabled={isLoading}
-                    sx={{
-                      py: 1.5,
-                      fontSize: "1.1rem",
-                      fontWeight: "bold",
-                      borderRadius: 2,
-                      background:
-                        "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
-                      "&:hover": {
-                        background:
-                          "linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)",
-                        transform: "translateY(-1px)",
-                        boxShadow: "0 6px 20px rgba(25, 118, 210, 0.3)",
-                      },
-                      "&:active": {
-                        transform: "translateY(0)",
-                      },
-                      transition: "all 0.2s ease",
-                      mb: 2,
-                      textTransform: "none",
-                    }}
-                  >
-                    {isLoading ? (
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <CircularProgress size={20} color="inherit" />
-                        Signing In...
-                      </Box>
-                    ) : (
-                      "Sign In"
-                    )}
-                  </Button>
-                </Box>
-
-                {/* Divider */}
-                <Divider sx={{ my: 4 }}>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ px: 2 }}
-                  >
-                    or
-                  </Typography>
-                </Divider>
-
-                {/* Additional Options */}
-                <Box sx={{ textAlign: "center" }}>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    Don't have an account?{" "}
-                    <Button
-                      color="primary"
-                      onClick={() => router.push("/signup")}
-                      sx={{
-                        fontWeight: "bold",
-                        textTransform: "none",
-                        "&:hover": {
-                          backgroundColor: "transparent",
-                          textDecoration: "underline",
-                        },
-                      }}
+          <TextField
+            fullWidth
+            size="small"
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading}
+            sx={authFieldSx}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      size="small"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
-                      Sign up here
-                    </Button>
-                  </Typography>
-                  <Button
-                    color="primary"
-                    onClick={() => router.push("/forgot-password")}
-                    size="small"
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: "normal",
-                      "&:hover": {
-                        backgroundColor: "transparent",
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
-                    Forgot your password?
-                  </Button>
-                </Box>
+                      {showPassword ? <VisibilityOff sx={{ fontSize: 16 }} /> : <Visibility sx={{ fontSize: 16 }} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </Stack>
+
+        <Box sx={{ textAlign: "center", mt: 1.25, mb: 2 }}>
+          <AuthLink href="/auth/forgot-password">Forgot password?</AuthLink>
+        </Box>
+
+        <Stack spacing={1}>
+          <Button
+            fullWidth
+            type="submit"
+            variant="contained"
+            disabled={isLoading}
+            sx={authPrimaryButtonSx}
+          >
+            {isLoading ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <CircularProgress size={16} color="inherit" />
+                Signing in…
               </Box>
-            </Grid>
-          </Grid>
-        </Paper>
-      </Container>
-    </Box>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
+
+          <Button
+            fullWidth
+            variant="text"
+            onClick={handleDemoLogin}
+            disabled={isDemoLoading || isLoading}
+            sx={authGhostButtonSx}
+          >
+            {isDemoLoading ? "Loading demo…" : "Try demo instead"}
+          </Button>
+        </Stack>
+      </Box>
+    </AuthLayout>
   );
 }

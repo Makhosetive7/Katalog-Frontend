@@ -1,926 +1,484 @@
 "use client";
 
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   Box,
   Typography,
   Chip,
-  Divider,
   Grid,
   LinearProgress,
-  Card,
-  CardContent,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  CircularProgress as MuiCircularProgress,
+  CircularProgress,
   Alert,
-  Stack,
-  Avatar,
-  Paper,
-  useTheme,
+  Button,
+  alpha,
 } from "@mui/material";
-
-import {
-  Close as CloseIcon,
-  CalendarToday,
-  MenuBook,
-  TrendingUp,
-  EmojiEvents,
-  Analytics,
-  Description,
-  Person,
-  LibraryBooks,
-  TrackChanges,
-  Speed,
-  Timeline,
-  Today,
-  DateRange,
-} from "@mui/icons-material";
-
 import {
   useGetBookProgressAnalyticsQuery,
   useGetReadingStatisticsQuery,
   useGetGoalStatisticsQuery,
 } from "@/redux/api/books";
+import AppModal from "./AppModal";
+import { DASH } from "@/components/dashboard/dashboardTheme";
+import { BookThumb, CircularProgressRing } from "@/components/dashboard/BookThumb";
+import { getBookCoverColor } from "@/components/dashboard/bookCoverColor";
+import { modalGhostButtonSx } from "./modalTheme";
 
-interface BookDetailsModalProps {
-  book: any;
+type BookDetailsModalProps = {
+  book: {
+    id?: string;
+    _id?: string;
+    title?: string;
+    author?: string;
+    genre?: string | string[];
+    status?: string;
+    rating?: number;
+    pages?: number;
+    totalChapters?: number;
+    chapters?: number;
+    coverImage?: string;
+    imageUrl?: string;
+    description?: string;
+    user?: string;
+    userId?: string;
+  };
   open: boolean;
   onClose: () => void;
+};
+
+function DetailStat({
+  label,
+  value,
+  accent = DASH.wine,
+}: {
+  label: string;
+  value: string | number;
+  accent?: string;
+}) {
+  return (
+    <Box
+      sx={{
+        p: 1.75,
+        textAlign: "center",
+        border: `1px solid ${alpha(DASH.wine, 0.1)}`,
+        borderTop: `3px solid ${accent}`,
+        bgcolor: "#FFFFFF",
+        height: "100%",
+      }}
+    >
+      <Typography
+        sx={{
+          fontFamily: DASH.serif,
+          fontWeight: 700,
+          fontSize: "1.35rem",
+          color: DASH.dark,
+          lineHeight: 1,
+          mb: 0.5,
+        }}
+      >
+        {value}
+      </Typography>
+      <Typography
+        sx={{
+          fontFamily: DASH.font,
+          fontSize: "0.68rem",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: alpha(DASH.dark, 0.5),
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
 }
+
+const STATUS_COLORS: Record<string, string> = {
+  "In-Progress": DASH.wine,
+  Completed: DASH.green,
+  Planned: "#3B82F6",
+  Dropped: DASH.gold,
+};
 
 export default function BookDetailsModal({
   book,
   open,
   onClose,
 }: BookDetailsModalProps) {
-  const theme = useTheme();
+  const bookId = book.id || book._id || "";
+  const accent = getBookCoverColor(book.genre);
+  const genres = Array.isArray(book.genre) ? book.genre : book.genre ? [book.genre] : [];
+  const coverSrc = book.coverImage || book.imageUrl;
 
   const {
     data: analyticsData,
     isLoading: isLoadingAnalytics,
     error: analyticsError,
-  } = useGetBookProgressAnalyticsQuery(book.id || book._id, { skip: !open });
-
-  console.log("analyticsData:", analyticsData);
+  } = useGetBookProgressAnalyticsQuery(bookId, { skip: !open || !bookId });
 
   const {
     data: readingStats,
     isLoading: isLoadingStats,
     error: statsError,
-  } = useGetReadingStatisticsQuery(book.id || book._id, { skip: !open });
+  } = useGetReadingStatisticsQuery(bookId, { skip: !open || !bookId });
 
-  console.log("readingStats:", readingStats);
-
-  const {
-    data: goalsStats,
-    isLoading: isLoadingGoals,
-  } = useGetGoalStatisticsQuery(
-    { userId: book.user || book.userId, bookId: book.id || book._id },
-    { skip: !open }
+  const { data: goalsStats, isLoading: isLoadingGoals } = useGetGoalStatisticsQuery(
+    { userId: book.user || book.userId || "", bookId },
+    { skip: !open || !bookId }
   );
-
-  console.log("goalsStats:", goalsStats);
 
   const analytics = analyticsData?.analytics;
   const bookDetails = analyticsData?.bookDetails;
   const readingData = readingStats?.reading;
-  const bookData = readingStats?.book;
 
-  const statusColors = {
-    "In-Progress": "primary",
-    Completed: "success",
-    Planned: "info",
-    Dropped: "warning",
-  } as const;
+  const completion = analytics?.completionPercentage ?? 0;
+  const progressColor = completion >= 100 ? DASH.green : accent;
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
+      year: "numeric",
     });
   };
 
-  const calculateDaysRemaining = (completionDate: string) => {
-    if (!completionDate) return null;
-    const today = new Date();
-    const target = new Date(completionDate);
-    const diffTime = target.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
-  // Enhanced StatCard component
-  const StatCard = ({
-    title,
-    value,
-    subtitle,
-    icon,
-    color = "primary",
-    size = "medium",
-  }: {
-    title: string;
-    value: any;
-    subtitle?: string;
-    icon: React.ReactNode;
-    color?: string;
-    size?: "small" | "medium" | "large";
-  }) => {
-    const avatarSize = size === "large" ? 48 : size === "medium" ? 40 : 32;
-    const valueVariant =
-      size === "large" ? "h5" : size === "medium" ? "h6" : "body1";
-
-    return (
-      <Card
-        variant="outlined"
-        sx={{
-          height: "100%",
-          borderRadius: 3,
-          transition: "all 0.2s ease-in-out",
-          "&:hover": {
-            transform: "translateY(-2px)",
-            boxShadow: 2,
-          },
-        }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Avatar
-              sx={{
-                bgcolor: `${color}.main`,
-                width: avatarSize,
-                height: avatarSize,
-                color: "white",
-              }}
-            >
-              {icon}
-            </Avatar>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                {title}
-              </Typography>
-              <Typography
-                variant={valueVariant}
-                component="div"
-                fontWeight="bold"
-              >
-                {value}
-              </Typography>
-              {subtitle && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 0.5 }}
-                >
-                  {subtitle}
-                </Typography>
-              )}
-            </Box>
-          </Stack>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  // Progress Card Component
-  const ProgressCard = ({
-    title,
-    current,
-    total,
-    percentage,
-    icon,
-    color = "primary",
-  }: {
-    title: string;
-    current: number;
-    total: number;
-    percentage: number;
-    icon: React.ReactNode;
-    color?: string;
-  }) => (
-    <Card variant="outlined" sx={{ borderRadius: 3, height: "100%" }}>
-      <CardContent sx={{ p: 3 }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-          <Avatar sx={{ bgcolor: `${color}.main`, color: "white" }}>
-            {icon}
-          </Avatar>
-          <Typography variant="subtitle1" fontWeight={600}>
-            {title}
-          </Typography>
-        </Stack>
-        <Stack spacing={2}>
-          <Typography
-            variant="h4"
-            fontWeight={700}
-            color="primary"
-            textAlign="center"
-          >
-            {current} / {total}
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            textAlign="center"
-          >
-            {percentage}% completed
-          </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={percentage || 0}
-            color={color}
-            sx={{
-              height: 16,
-              borderRadius: 8,
-              "& .MuiLinearProgress-bar": {
-                borderRadius: 8,
-              },
-            }}
-          />
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <Dialog
+    <AppModal
       open={open}
       onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 3, maxHeight: "90vh" } }}
+      label="Details"
+      title={bookDetails?.title || book.title || "Book details"}
+      subtitle={bookDetails?.author || book.author || "Unknown author"}
+      maxWidth="md"
+      accent={accent}
+      hideActions
     >
-      <DialogTitle
-        sx={{
-          m: 0,
-          p: 3,
-          pb: 2,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          position: "relative",
-          bgcolor: "grey.50",
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <MenuBook color="primary" />
-          <Typography variant="h5" component="div" fontWeight={700}>
-            Book Details & Analytics
-          </Typography>
-        </Stack>
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <Box
           sx={{
-            position: "absolute",
-            right: 16,
-            top: 16,
-            color: "text.secondary",
+            display: "flex",
+            gap: 2,
+            alignItems: "flex-start",
+            p: 2,
+            border: `1px solid ${alpha(DASH.wine, 0.1)}`,
+            bgcolor: alpha(accent, 0.03),
           }}
         >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+          {coverSrc ? (
+            <Box
+              component="img"
+              src={coverSrc}
+              alt=""
+              sx={{
+                width: 56,
+                height: 76,
+                objectFit: "cover",
+                flexShrink: 0,
+                border: `1px solid ${alpha(accent, 0.2)}`,
+              }}
+            />
+          ) : (
+            <BookThumb
+              title={book.title || "Book"}
+              genre={book.genre}
+              size="lg"
+            />
+          )}
 
-      <DialogContent dividers sx={{ p: 0 }}>
-        {!book ? (
-          <Box p={3}>
-            <Alert severity="error">
-              Failed to load book details. Please try again.
-            </Alert>
-          </Box>
-        ) : (
-          <Box>
-            {/* === TOP SECTION 50/50 === */}
-            <Grid container spacing={3} sx={{ p: 3, pb: 2 }}>
-              {/* Cover Image */}
-              <Grid item xs={12} md={6}>
-                <Paper
-                  elevation={0}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1 }}>
+              {book.status && (
+                <Chip
+                  label={book.status}
+                  size="small"
                   sx={{
-                    minWidth: "30vw",
-                    height: 400,
-                    bgcolor: "grey.50",
-                    borderRadius: 3,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                    position: "relative",
-                    border: `1px solid ${theme.palette.divider}`,
-                    mx: "auto",
+                    height: 24,
+                    fontFamily: DASH.font,
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    borderRadius: 0,
+                    bgcolor: alpha(STATUS_COLORS[book.status] ?? DASH.wine, 0.1),
+                    color: STATUS_COLORS[book.status] ?? DASH.wine,
                   }}
-                >
-                  {book.coverImage ? (
-                    <img
-                      src={book.coverImage}
-                      alt={book.title}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <MenuBook sx={{ fontSize: 48, color: "text.secondary" }} />
-                  )}
-                  {book.status === "In-Progress" &&
-                    analytics?.completionPercentage != null && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          bottom: 16,
-                          right: 16,
-                          bgcolor: "background.paper",
-                          borderRadius: "50%",
-                          p: 1,
-                          boxShadow: 3,
-                        }}
-                      >
-                        <MuiCircularProgress
-                          variant="determinate"
-                          value={analytics.completionPercentage}
-                          size={60}
-                          thickness={4}
-                          color="primary"
-                        />
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            height: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 14,
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {analytics.completionPercentage}%
-                        </Box>
-                      </Box>
-                    )}
-                </Paper>
-              </Grid>
-
-              {/* Book Info */}
-              <Grid item xs={12} md={6}>
-                <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="h5" fontWeight={600} gutterBottom>
-                      {bookDetails?.title || book.title}
-                    </Typography>
-                    <Typography variant="subtitle1" color="text.secondary">
-                      by {bookDetails?.author || book.author || "Unknown Author"}
-                    </Typography>
-                  </Box>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {bookDetails?.genre?.map((genre: string, index: number) => (
-                      <Chip
-                        key={index}
-                        label={genre}
-                        color="default"
-                        variant="outlined"
-                        size="small"
-                      />
-                    ))}
-                    <Chip
-                      label={book.status}
-                      color={
-                        statusColors[book.status as keyof typeof statusColors]
-                      }
-                      size="small"
-                    />
-                    {book.rating && (
-                      <Chip
-                        label={`⭐ ${book.rating}/5`}
-                        color="default"
-                        variant="outlined"
-                        size="small"
-                      />
-                    )}
-                  </Stack>
-                  <Stack spacing={1}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <MenuBook
-                        sx={{ fontSize: 18, color: "text.secondary" }}
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        {bookData?.totalPages || book.pages || "N/A"} pages
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Description
-                        sx={{ fontSize: 18, color: "text.secondary" }}
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        {bookData?.totalChapters || book.totalChapters || "N/A"} chapters
-                      </Typography>
-                    </Box>
-                    {book.dateStarted && (
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <CalendarToday
-                          sx={{ fontSize: 18, color: "text.secondary" }}
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          Started: {formatDate(book.dateStarted)}
-                        </Typography>
-                      </Box>
-                    )}
-                    {book.dateCompleted && (
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <CalendarToday
-                          sx={{ fontSize: 18, color: "text.secondary" }}
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          Completed: {formatDate(book.dateCompleted)}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Stack>
-                </Stack>
-              </Grid>
-            </Grid>
-
-            {/* === ENHANCED CURRENT PROGRESS === */}
-            <Box sx={{ px: 3, pb: 3 }}>
-              <Card
-                variant="outlined"
-                sx={{ borderRadius: 3, bgcolor: "grey.50" }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={2}
-                    sx={{ mb: 2 }}
-                  >
-                    <TrackChanges color="primary" sx={{ fontSize: 28 }} />
-                    <Typography variant="h6" fontWeight={600}>
-                      Current Progress
-                    </Typography>
-                  </Stack>
-                  <LinearProgress
-                    variant="determinate"
-                    value={analytics?.completionPercentage || 0}
-                    sx={{
-                      height: 12,
-                      borderRadius: 6,
-                      mb: 2,
-                      backgroundColor: "grey.300",
-                      "& .MuiLinearProgress-bar": {
-                        borderRadius: 6,
-                      },
-                    }}
-                  />
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography variant="body1" fontWeight={500}>
-                      Page {analytics?.byPages?.current || 0} of {analytics?.byPages?.total || "N/A"}
-                    </Typography>
-                    <Typography variant="body1" fontWeight={500}>
-                      Chapter {analytics?.byChapters?.current || 0} of {analytics?.byChapters?.total || "N/A"}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Box>
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* === COMPREHENSIVE ANALYTICS === */}
-            <Box sx={{ px: 3, pb: 2 }}>
-              <Typography
-                variant="h6"
-                fontWeight={600}
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <Analytics /> Reading Analytics
-              </Typography>
-              
-              {isLoadingAnalytics ? (
-                <Box display="flex" justifyContent="center" py={4}>
-                  <MuiCircularProgress size={40} />
-                </Box>
-              ) : analyticsError ? (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  Analytics data not available
-                </Alert>
-              ) : analytics ? (
-                <Grid container spacing={3}>
-                  {/* Progress by Pages */}
-                  <Grid item xs={12} md={6}>
-                    <ProgressCard
-                      title="Progress by Pages"
-                      current={analytics.byPages?.current || 0}
-                      total={analytics.byPages?.total || 0}
-                      percentage={analytics.byPages?.percentage || 0}
-                      icon={<Description />}
-                      color="primary"
-                    />
-                  </Grid>
-
-                  {/* Progress by Chapters */}
-                  <Grid item xs={12} md={6}>
-                    <ProgressCard
-                      title="Progress by Chapters"
-                      current={analytics.byChapters?.current || 0}
-                      total={analytics.byChapters?.total || 0}
-                      percentage={analytics.byChapters?.percentage || 0}
-                      icon={<LibraryBooks />}
-                      color="secondary"
-                    />
-                  </Grid>
-
-                  {/* Overall Completion */}
-                  <Grid item xs={12} md={4}>
-                    <StatCard
-                      title="Overall Completion"
-                      value={`${analytics.completionPercentage || 0}%`}
-                      icon={<TrackChanges />}
-                      color="success"
-                      size="large"
-                    />
-                  </Grid>
-
-                  {/* Recommended Metric */}
-                  <Grid item xs={12} md={4}>
-                    <StatCard
-                      title="Recommended Tracking"
-                      value={analytics.recommendedMetric === "pages" ? "Pages" : "Chapters"}
-                      subtitle="Based on your reading pattern"
-                      icon={<Speed />}
-                      color="info"
-                      size="large"
-                    />
-                  </Grid>
-
-                  {/* Reading Efficiency */}
-                  <Grid item xs={12} md={4}>
-                    <StatCard
-                      title="Reading Efficiency"
-                      value={analytics.byPages?.percentage > analytics.byChapters?.percentage ? "Pages" : "Chapters"}
-                      subtitle="More consistent progress"
-                      icon={<TrendingUp />}
-                      color="warning"
-                      size="large"
-                    />
-                  </Grid>
-                </Grid>
-              ) : null}
-            </Box>
-
-            {/* === ENHANCED READING STATISTICS === */}
-            <Box sx={{ px: 3, pb: 2 }}>
-              <Typography
-                variant="h6"
-                fontWeight={600}
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <Timeline /> Reading Statistics
-              </Typography>
-              
-              {isLoadingStats ? (
-                <Box display="flex" justifyContent="center" py={2}>
-                  <MuiCircularProgress size={24} />
-                </Box>
-              ) : statsError ? (
-                <Alert severity="warning">Failed to load reading stats</Alert>
-              ) : readingData ? (
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <StatCard
-                      title="Pages Read"
-                      value={readingData.totalPagesRead || 0}
-                      icon={<Description />}
-                      color="primary"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <StatCard
-                      title="Chapters Read"
-                      value={readingData.totalChaptersRead || 0}
-                      icon={<LibraryBooks />}
-                      color="secondary"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <StatCard
-                      title="Pages Per Day"
-                      value={readingData.pagesPerDay || "0.0"}
-                      icon={<Speed />}
-                      color="info"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <StatCard
-                      title="Chapters Per Day"
-                      value={readingData.chaptersPerDay || "0.00"}
-                      icon={<TrendingUp />}
-                      color="success"
-                    />
-                  </Grid>
-
-                  {/* Additional Reading Stats */}
-                  <Grid item xs={12} sm={6} md={4}>
-                    <StatCard
-                      title="Days Tracked"
-                      value={readingData.daysTracked || 0}
-                      icon={<Today />}
-                      color="warning"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <StatCard
-                      title="Est. Completion"
-                      value={readingData.estimatedCompletionDate ? formatDate(readingData.estimatedCompletionDate) : "N/A"}
-                      subtitle={readingData.estimatedCompletionDate ? 
-                        `${calculateDaysRemaining(readingData.estimatedCompletionDate)} days remaining` : 
-                        "Not available"}
-                      icon={<DateRange />}
-                      color="primary"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <StatCard
-                      title="Reading Consistency"
-                      value={readingData.daysTracked > 0 ? "Good" : "Starting"}
-                      subtitle={`${readingData.daysTracked || 0} days active`}
-                      icon={<TrackChanges />}
-                      color="success"
-                    />
-                  </Grid>
-                </Grid>
-              ) : null}
-            </Box>
-
-            {/* === ENHANCED GOALS STATS === */}
-            <Box sx={{ px: 3, pb: 3 }}>
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={2}
-                sx={{ mb: 3 }}
-              >
-                <EmojiEvents color="primary" sx={{ fontSize: 28 }} />
-                <Typography variant="h6" fontWeight={600}>
-                  Goals & Achievements
-                </Typography>
-              </Stack>
-              
-              {isLoadingGoals ? (
-                <Box display="flex" justifyContent="center" py={4}>
-                  <MuiCircularProgress size={40} />
-                </Box>
-              ) : goalsStats ? (
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Card
-                      variant="outlined"
-                      sx={{ borderRadius: 3, height: "100%" }}
-                    >
-                      <CardContent sx={{ p: 3 }}>
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          spacing={2}
-                          sx={{ mb: 2 }}
-                        >
-                          <EmojiEvents color="warning" />
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            Goals Overview
-                          </Typography>
-                        </Stack>
-                        <Stack spacing={3}>
-                          <StatCard
-                            title="Total Goals"
-                            value={goalsStats.totalGoals || 0}
-                            icon={<EmojiEvents />}
-                            color="warning"
-                            size="large"
-                          />
-                          <Stack
-                            direction="row"
-                            spacing={3}
-                            justifyContent="space-around"
-                          >
-                            <Box textAlign="center">
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                gutterBottom
-                              >
-                                Completed
-                              </Typography>
-                              <Typography
-                                variant="h4"
-                                color="success.main"
-                                fontWeight={700}
-                              >
-                                {goalsStats.completedGoals || 0}
-                              </Typography>
-                            </Box>
-                            <Box textAlign="center">
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                gutterBottom
-                              >
-                                Active
-                              </Typography>
-                              <Typography variant="h4" fontWeight={700}>
-                                {goalsStats.activeGoals || 0}
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Card
-                      variant="outlined"
-                      sx={{ borderRadius: 3, height: "100%" }}
-                    >
-                      <CardContent sx={{ p: 3 }}>
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          spacing={2}
-                          sx={{ mb: 2 }}
-                        >
-                          <TrackChanges color="info" />
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            Performance Metrics
-                          </Typography>
-                        </Stack>
-                        <Box textAlign="center" sx={{ mt: 2 }}>
-                          <Typography
-                            variant="h2"
-                            fontWeight={800}
-                            color="primary"
-                            gutterBottom
-                          >
-                            {goalsStats.avgCompletion || 0}%
-                          </Typography>
-                          <LinearProgress
-                            variant="determinate"
-                            value={goalsStats.avgCompletion || 0}
-                            sx={{
-                              height: 16,
-                              borderRadius: 8,
-                              mb: 2,
-                              backgroundColor: "grey.100",
-                              "& .MuiLinearProgress-bar": {
-                                borderRadius: 8,
-                              },
-                            }}
-                          />
-                          <Typography variant="body2" color="text.secondary">
-                            Average goal completion rate
-                          </Typography>
-                          {goalsStats.completedGoals > 0 && (
-                            <Typography 
-                              variant="body2" 
-                              color="success.main" 
-                              sx={{ mt: 1, fontWeight: 600 }}
-                            >
-                              {Math.round((goalsStats.completedGoals / goalsStats.totalGoals) * 100)}% success rate
-                            </Typography>
-                          )}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-              ) : (
-                <Alert severity="info">
-                  No goal data available. Set reading goals to track your progress!
-                </Alert>
+                />
+              )}
+              {genres.map((genre) => (
+                <Chip
+                  key={genre}
+                  label={genre}
+                  size="small"
+                  sx={{
+                    height: 24,
+                    fontFamily: DASH.font,
+                    fontSize: "0.7rem",
+                    borderRadius: 0,
+                    bgcolor: alpha(accent, 0.08),
+                    color: accent,
+                    border: `1px solid ${alpha(accent, 0.15)}`,
+                  }}
+                />
+              ))}
+              {book.rating != null && book.rating > 0 && (
+                <Chip
+                  label={`${book.rating}/5`}
+                  size="small"
+                  sx={{
+                    height: 24,
+                    fontFamily: DASH.font,
+                    fontSize: "0.7rem",
+                    borderRadius: 0,
+                  }}
+                />
               )}
             </Box>
 
-            {/* === NOTES === */}
-            {book.chapterNotes && book.chapterNotes.length > 0 && (
-              <Box sx={{ px: 3, pb: 2 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
-                  Chapter Notes
-                </Typography>
-                <Grid container spacing={2}>
-                  {book.chapterNotes
-                    .slice(0, 3)
-                    .map((note: any, index: number) => (
-                      <Grid item xs={12} md={4} key={index}>
-                        <Card
-                          variant="outlined"
-                          sx={{
-                            borderRadius: 2,
-                            height: 140,
-                            display: "flex",
-                            px: 2,
-                            alignItems: "center",
-                          }}
-                        >
-                          <Avatar
-                            sx={{
-                              bgcolor: "secondary.main",
-                              width: 48,
-                              height: 48,
-                              mr: 2,
-                            }}
-                          >
-                            <MenuBook />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2" fontWeight="600">
-                              Chapter {note.chapter}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{ mt: 0.5 }}
-                            >
-                              {note.note}
-                            </Typography>
-                            {note.createdAt && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {formatDate(note.createdAt)}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Card>
-                      </Grid>
-                    ))}
-                </Grid>
-              </Box>
-            )}
+            <Typography
+              sx={{
+                fontFamily: DASH.font,
+                fontSize: "0.8125rem",
+                color: alpha(DASH.dark, 0.55),
+                lineHeight: 1.5,
+              }}
+            >
+              {book.pages ?? bookDetails?.pages ?? "—"} pages
+              {(book.totalChapters ?? book.chapters)
+                ? ` · ${book.totalChapters ?? book.chapters} chapters`
+                : ""}
+            </Typography>
+          </Box>
 
-            {/* === DESCRIPTION === */}
-            {book.description && (
-              <Box sx={{ px: 3, pb: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
-                  Description
+          <CircularProgressRing
+            value={completion}
+            color={progressColor}
+            size={52}
+          />
+        </Box>
+
+        <Box
+          sx={{
+            p: 2,
+            border: `1px solid ${alpha(DASH.wine, 0.1)}`,
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: DASH.font,
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              color: DASH.dark,
+              mb: 1.25,
+            }}
+          >
+            Current progress
+          </Typography>
+
+          {isLoadingAnalytics ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+              <CircularProgress size={22} sx={{ color: DASH.wine }} />
+            </Box>
+          ) : analyticsError ? (
+            <Alert severity="warning" sx={{ borderRadius: 0, fontFamily: DASH.font }}>
+              Progress data unavailable
+            </Alert>
+          ) : (
+            <>
+              <LinearProgress
+                variant="determinate"
+                value={Math.min(completion, 100)}
+                sx={{
+                  height: 4,
+                  mb: 1.25,
+                  bgcolor: alpha(DASH.wine, 0.08),
+                  "& .MuiLinearProgress-bar": { bgcolor: progressColor },
+                }}
+              />
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontFamily: DASH.font,
+                    fontSize: "0.75rem",
+                    color: alpha(DASH.dark, 0.55),
+                  }}
+                >
+                  Page {analytics?.byPages?.current ?? 0} of{" "}
+                  {analytics?.byPages?.total ?? book.pages ?? "—"}
                 </Typography>
-                <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ lineHeight: 1.6 }}
-                    >
-                      {book.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <Typography
+                  sx={{
+                    fontFamily: DASH.font,
+                    fontSize: "0.75rem",
+                    color: alpha(DASH.dark, 0.55),
+                  }}
+                >
+                  Chapter {analytics?.byChapters?.current ?? 0} of{" "}
+                  {analytics?.byChapters?.total ?? book.chapters ?? "—"}
+                </Typography>
               </Box>
+            </>
+          )}
+        </Box>
+
+        {(isLoadingStats || readingData) && (
+          <Box>
+            <Typography
+              sx={{
+                fontFamily: DASH.font,
+                fontWeight: 600,
+                fontSize: "0.8125rem",
+                color: DASH.dark,
+                mb: 1.25,
+              }}
+            >
+              Reading stats
+            </Typography>
+
+            {isLoadingStats ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+                <CircularProgress size={22} sx={{ color: DASH.wine }} />
+              </Box>
+            ) : statsError ? (
+              <Alert severity="warning" sx={{ borderRadius: 0, fontFamily: DASH.font }}>
+                Stats unavailable
+              </Alert>
+            ) : readingData ? (
+              <Grid container spacing={1.5}>
+                <Grid size={{ xs: 6, sm: 3 }}>
+                  <DetailStat
+                    label="Pages read"
+                    value={readingData.totalPagesRead ?? 0}
+                    accent={DASH.wine}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3 }}>
+                  <DetailStat
+                    label="Chapters read"
+                    value={readingData.totalChaptersRead ?? 0}
+                    accent={accent}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3 }}>
+                  <DetailStat
+                    label="Pages / day"
+                    value={readingData.pagesPerDay ?? "0"}
+                    accent={DASH.gold}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3 }}>
+                  <DetailStat
+                    label="Days tracked"
+                    value={readingData.daysTracked ?? 0}
+                    accent={DASH.green}
+                  />
+                </Grid>
+              </Grid>
+            ) : null}
+          </Box>
+        )}
+
+        {(isLoadingGoals || goalsStats) && (
+          <Box
+            sx={{
+              p: 2,
+              border: `1px solid ${alpha(DASH.wine, 0.1)}`,
+              bgcolor: alpha(DASH.gold, 0.04),
+            }}
+          >
+            <Typography
+              sx={{
+                fontFamily: DASH.font,
+                fontWeight: 600,
+                fontSize: "0.8125rem",
+                color: DASH.dark,
+                mb: 1,
+              }}
+            >
+              Goals
+            </Typography>
+
+            {isLoadingGoals ? (
+              <CircularProgress size={20} sx={{ color: DASH.gold }} />
+            ) : goalsStats ? (
+              <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+                <Typography sx={{ fontFamily: DASH.font, fontSize: "0.8125rem" }}>
+                  <strong>{goalsStats.totalGoals ?? 0}</strong> total
+                </Typography>
+                <Typography
+                  sx={{ fontFamily: DASH.font, fontSize: "0.8125rem", color: DASH.green }}
+                >
+                  <strong>{goalsStats.completedGoals ?? 0}</strong> completed
+                </Typography>
+                <Typography sx={{ fontFamily: DASH.font, fontSize: "0.8125rem" }}>
+                  <strong>{goalsStats.activeGoals ?? 0}</strong> active
+                </Typography>
+                <Typography sx={{ fontFamily: DASH.font, fontSize: "0.8125rem" }}>
+                  <strong>{goalsStats.avgCompletion ?? 0}%</strong> avg completion
+                </Typography>
+              </Box>
+            ) : (
+              <Typography
+                sx={{
+                  fontFamily: DASH.font,
+                  fontSize: "0.8125rem",
+                  color: alpha(DASH.dark, 0.5),
+                }}
+              >
+                No goals set for this book yet.
+              </Typography>
             )}
           </Box>
         )}
-      </DialogContent>
 
-      <DialogActions
-        sx={{
-          p: 3,
-          borderTop: `1px solid ${theme.palette.divider}`,
-          bgcolor: "grey.50",
-        }}
-      >
-        <Button
-          onClick={onClose}
-          variant="contained"
-          sx={{
-            borderRadius: 2,
-            px: 4,
-            py: 1,
-            fontSize: "1rem",
-          }}
-          startIcon={<CloseIcon />}
-        >
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+        {readingData?.estimatedCompletionDate && (
+          <Typography
+            sx={{
+              fontFamily: DASH.font,
+              fontSize: "0.8125rem",
+              color: alpha(DASH.dark, 0.55),
+            }}
+          >
+            Estimated finish: {formatDate(readingData.estimatedCompletionDate)}
+          </Typography>
+        )}
+
+        {book.description && (
+          <Box>
+            <Typography
+              sx={{
+                fontFamily: DASH.font,
+                fontWeight: 600,
+                fontSize: "0.8125rem",
+                color: DASH.dark,
+                mb: 0.75,
+              }}
+            >
+              Description
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: DASH.font,
+                fontSize: "0.8125rem",
+                color: alpha(DASH.dark, 0.6),
+                lineHeight: 1.6,
+              }}
+            >
+              {book.description}
+            </Typography>
+          </Box>
+        )}
+
+        <Box sx={{ display: "flex", justifyContent: "flex-end", pt: 0.5 }}>
+          <Button onClick={onClose} sx={modalGhostButtonSx}>
+            Close
+          </Button>
+        </Box>
+      </Box>
+    </AppModal>
   );
 }

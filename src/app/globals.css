@@ -24,3 +24,97 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes landing-hero-in {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes landing-scroll-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(8px); }
+}
+
+.landing-hero-enter {
+  animation: landing-hero-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-hero-enter--delayed {
+  animation-delay: 0.2s;
+}
+
+.landing-scroll-hint {
+  animation: landing-scroll-bounce 2s ease-in-out infinite;
+}
+
+@keyframes landing-fire-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes landing-streak-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.landing-fire-icon {
+  animation: landing-fire-pulse 1.5s ease-in-out infinite;
+}
+
+.landing-streak-flame--active {
+  background: #FF6B35;
+  animation: landing-streak-glow 2s ease-in-out infinite;
+}
+
+.landing-streak-flame--active:nth-child(2) { animation-delay: 0.15s; }
+.landing-streak-flame--active:nth-child(3) { animation-delay: 0.3s; }
+.landing-streak-flame--active:nth-child(4) { animation-delay: 0.45s; }
+.landing-streak-flame--active:nth-child(5) { animation-delay: 0.6s; }
+.landing-streak-flame--active:nth-child(6) { animation-delay: 0.75s; }
+
+.landing-mockup {
+  animation: landing-hero-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-enter,
+  .landing-scroll-hint,
+  .landing-fire-icon,
+  .landing-streak-flame--active,
+  .landing-mockup,
+  .landing-reveal {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .landing-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-reveal--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-feature-card {
+  transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.landing-feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(92, 46, 46, 0.1);
+  border-color: rgba(92, 46, 46, 0.25) !important;
+}

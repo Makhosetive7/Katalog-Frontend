@@ -1,9 +1,173 @@
+export interface PaginatedBooks<T> {
+  items: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
+export interface RichProgressResponse {
+  message?: string;
+  book: {
+    id: string;
+    title: string;
+    author: string;
+    currentPage: number;
+    currentChapter: number;
+    status: string;
+    completionPercentage: number;
+    velocity?: { avgPagesPerDay: number; lastUpdated: string };
+  };
+  streak?: {
+    current: number;
+    longest: number;
+    isNewRecord: boolean;
+    lastReadingDate?: string;
+  } | null;
+  goalsCompleted?: { id: string; type: string; target: number; progress: number }[];
+  achievementsUnlocked?: {
+    id: string;
+    title: string;
+    description?: string;
+    level: string;
+    type: string;
+    earnedAt: string;
+  }[];
+  insights?: {
+    pagesLoggedThisUpdate: number;
+    pagesToday: number;
+    paceToFinishDays: number | null;
+    paceToFinishLabel: string | null;
+  };
+  updatedGoals?: { id: string; progress: number; target: number; completed: boolean }[];
+}
+
+export interface WeeklyInsights {
+  period: { start: string; end: string };
+  summary: {
+    pagesRead: number;
+    pagesChangePercent: number;
+    sessionsCount: number;
+    activeDays: number;
+    booksInProgress: number;
+  };
+  streak?: { current: number; longest: number; atRisk: boolean } | null;
+  goalsDueSoon: {
+    id: string;
+    type: string;
+    target: number;
+    progress: number;
+    endDate: string;
+  }[];
+  continueReading: {
+    id: string;
+    title: string;
+    author: string;
+    completionPercentage: number;
+    currentPage: number;
+    pages: number;
+  }[];
+  recentAchievements: { title: string; level: string; earnedAt: string }[];
+  narratives: string[];
+}
+
+export interface DiscoveryBook {
+  openLibraryKey?: string;
+  title: string;
+  author: string;
+  publishYear?: number;
+  pages?: number;
+  isbn?: string;
+  coverUrl?: string | null;
+  genres?: string[];
+}
+
+export interface Recommendations {
+  continueReading: {
+    id: string;
+    title: string;
+    author: string;
+    completionPercentage: number;
+    pagesLeft: number;
+    daysToFinish: number | null;
+    reason: string;
+  }[];
+  upNext: { id: string; title: string; author: string; reason: string }[];
+  topGenres: { genre: string; count: number }[];
+  genreSuggestions: { genre: string; message: string }[];
+  readingTip: string | null;
+}
+
+export interface PublicProfile {
+  user: {
+    username: string;
+    profile?: UserProfile & { bio?: string };
+    memberSince: string;
+  };
+  stats: {
+    totalBooks: number;
+    booksCompleted: number;
+    currentStreak: number;
+    longestStreak: number;
+    challengeGoal: number | null;
+    challengeProgress: number;
+  };
+  recentBooks: {
+    title: string;
+    author: string;
+    genre?: string[];
+    rating?: number;
+    completionPercentage?: number;
+  }[];
+  achievements: Achievement[];
+}
+
+export interface NudgePreview {
+  nudges: string[];
+  emailEnabled: boolean;
+}
+
+export interface ImportPreview {
+  format: "external" | "katalog";
+  totalRows: number;
+  validCount: number;
+  invalidCount: number;
+  statusBreakdown: Record<string, number>;
+  preview: {
+    rowNumber: number;
+    valid: boolean;
+    issues: string[];
+    title?: string;
+    author?: string;
+    status?: string;
+    pages?: number;
+    rating?: number;
+  }[];
+  invalidRows: { rowNumber: number; issues: string[] }[];
+}
+
+export interface ImportResult {
+  message: string;
+  format: string;
+  imported: number;
+  skippedDuplicates: number;
+  failed: number;
+  invalidRows: number;
+  statusBreakdown: Record<string, number>;
+}
+
 export interface Book {
   id: string;
   title: string;
   author: string;
   description?: string;
   coverImage?: string;
+  imageUrl?: string;
+  isbn?: string;
+  openLibraryKey?: string;
   totalPages: number;
   currentPage: number;
   pages: number;
@@ -105,7 +269,7 @@ export interface UserProfile {
 
 export interface UserPreferences {
   emailNotifications: boolean;
-  privacy: "public" | "private" | "friends";
+  privacy: "public" | "private" | "friends-only";
 }
 
 export interface Streak {
